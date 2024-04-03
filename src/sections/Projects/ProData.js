@@ -83,7 +83,7 @@ import p6img8 from '../../assets/project6/p6img8.png';
 
 
 // icons
-import { FaReact,FaLaravel,FaHtml5,FaCss3Alt,FaBootstrap,FaFigma, FaGear  } from "react-icons/fa6";
+import { FaReact,FaLaravel,FaHtml5,FaCss3Alt,FaBootstrap,FaFigma } from "react-icons/fa6";
 import { BiLogoJquery } from "react-icons/bi";
 import { SiMysql} from "react-icons/si";
 import { IoLogoJavascript , IoLogoCapacitor } from "react-icons/io5";
