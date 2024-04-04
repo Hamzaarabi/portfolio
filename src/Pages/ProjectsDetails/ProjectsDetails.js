@@ -97,7 +97,7 @@ function ProjectsDetails() {
                             </div>
                         </div>
                         <div className="link_preview">
-                            {/* <h2 className="text-white">Link Preview</h2>
+                            {/* <h2 className="text-white">Link </h2>
                             <p>This Project is Uploaded in my Github Accout, so if you want to check all my project i invite you to visit my Github Account just <a href="https://github.com/hamzaarabi>click Here</a> </p> */}
                             <div className="preview_btn">
                             <Button title="Github" icon={<FaGithub />} link={project.project_link_preview}  />
