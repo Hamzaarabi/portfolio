@@ -258,7 +258,7 @@ export const ProData = [
             {tag: "#react js"},
         ],
         project_structure_img: structure_05,
-        project_link_preview: 'https://github.com/hamzaarabi',
+        project_link_preview: 'https://github.com/hamzaarabi/portfolio/',
     },
     {
         id: 6,
