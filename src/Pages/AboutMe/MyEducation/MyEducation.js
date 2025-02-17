@@ -23,6 +23,15 @@ const MyEducation = () => {
                   </div>
               </div>
 
+
+              <div className="box">
+                  <div className="content">
+                      <span className='span'><FaCalendar /> 2024 - 2025 </span>
+                      <h3>ENSA KENITRA</h3>
+                      <p>Licence in Génie informatique and digitalisation</p>
+                  </div>
+              </div>
+
           </div>
         </section>
       </>

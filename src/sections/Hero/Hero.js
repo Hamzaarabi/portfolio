@@ -4,7 +4,7 @@ import SocialIcons from '../../components/SocialIcons/SocialIcons';
 import { FaDownload } from "react-icons/fa6";
 import Coding from '../../assets/coding.png'
 // import { saveAs } from 'file-saver';
-import CV from '../../assets/CV-hamza-new.pdf';
+import CV from '../../assets/last_simple_cv-02-11-2024.pdf';
 import './Hero.css'
 
 function Hero() {

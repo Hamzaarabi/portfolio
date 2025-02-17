@@ -12,6 +12,36 @@ const MyExperience = () => {
 
      <br /> <br /> <br />
       <h1 className="heading"> <span> my </span> experience : </h1>
+
+
+
+
+
+      <section className="container-md experience" id="experience">
+      
+      <div className="box-container">
+          <div className="box">
+              <div className="content">
+                  <span className='span'><FaCalendar /> 2024-Actuel </span>
+                  <h3>WEB FULL STACK DEVELOPER</h3>
+                  <p>Delta Holding in Skhirat,Rabat :
+<br />
+                  <span className='mx-4'>- Website creation . </span> <br />
+                  <span className='mx-4'>- Website modification . </span> <br />
+                  <span className='mx-4'>- support technique </span> <br />
+                  <span className='mx-4'>- Data management. </span> <br />
+                  {/* <span className='mx-4'>- SEO (Search Engine Optimization). </span> <br /> */}
+                  <span className='mx-4'>- And other tasks within the company. </span> <br />
+                  {/* <span className='mx-4'>- Web scraping . </span> */}
+                  
+                  
+                  
+              
+                  </p>
+              </div>
+          </div>
+      </div>
+    </section>
      
       <section className="container-md experience" id="experience">
       

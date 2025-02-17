@@ -13,7 +13,7 @@
 }
 .logo111 img {
     width:205px ;
-    height: 131px;
+    height: 81px;
     
  
 }
@@ -81,7 +81,7 @@
 }
 
 .social li a:hover, .web_links li #link:hover{
-    color: #ffaa00;
+    color:var(--main-color);
 }
 
 @media (max-width:768px) {
