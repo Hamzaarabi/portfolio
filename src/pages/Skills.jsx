@@ -1,5 +1,4 @@
-import { FaAward, FaCloud, FaFileLines, FaGear, FaGitAlt, FaMagnifyingGlassChart } from 'react-icons/fa6';
-import { SiCanva } from 'react-icons/si';
+import { FaAward, FaBuilding, FaCloud, FaDatabase, FaFileLines, FaGear, FaGitAlt, FaMagnifyingGlassChart, FaPalette } from 'react-icons/fa6';
 import useTitle from '../hooks/useTitle';
 import { certifications } from '../data/portfolio';
 import PageHero from '../components/PageHero';
@@ -15,6 +14,8 @@ const additional = [
   { icon: FaFileLines, title: 'Agile / Scrum', desc: 'Iterative delivery in sprints with constant feedback — small cross-functional steps, visible progress.' },
   { icon: FaPalette, title: 'Figma & Canva', desc: 'From wireframes to final visuals — designing interfaces and brand assets before development begins.' },
   { icon: FaMagnifyingGlassChart, title: 'SEO & Web Scraping', desc: 'Technical SEO that helps sites get found, plus pragmatic data collection from real agency work.' },
+  { icon: FaDatabase, title: 'SQL Server & Databases', desc: 'Designing and querying reliable databases across SQL Server, MySQL and MongoDB — clean schemas, safe migrations and useful reports for business teams.' },
+  { icon: FaBuilding, title: 'Sage ERP & Business Tools', desc: 'Working with Sage ERP and business management tools: company data, day-to-day operations, user support and connecting business needs with the right software.' },
 ];
 
 export default function Skills() {

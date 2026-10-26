@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaDownload, FaChevronDown } from 'react-icons/fa6';
+import { FaArrowRight, FaDownload, FaChevronDown, FaWhatsapp } from 'react-icons/fa6';
 import { profile, techMarquee } from '../data/portfolio';
 import { useTypewriter, useCounter } from '../hooks/hooks';
 import Socials from '../components/Socials';
@@ -57,7 +57,7 @@ export default function Hero() {
           <Reveal>
             <span className="badge-avail">
               <span className="pulse" />
-              {profile.available ? 'Available for new opportunities' : profile.currentRole}
+              {profile.available ? profile.availabilityLabel : profile.currentRole}
             </span>
           </Reveal>
           <Reveal delay={80}>
@@ -73,7 +73,10 @@ export default function Hero() {
           </Reveal>
           <Reveal delay={240}>
             <div className="hero-cta">
-              <Link to="/projects" className="btn btn-primary">View my work <FaArrowRight /></Link>
+              <a href={profile.whatsappLink} target="_blank" rel="noreferrer" className="btn btn-primary">
+                <FaWhatsapp /> Chat on WhatsApp
+              </a>
+              <Link to="/projects" className="btn btn-ghost">View my work <FaArrowRight /></Link>
               <a href={profile.cv} download="Hamza-CV.pdf" className="btn btn-ghost">
                 <FaDownload /> Download CV
               </a>

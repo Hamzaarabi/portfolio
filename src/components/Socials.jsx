@@ -1,4 +1,4 @@
-import { FaGithub, FaLinkedin, FaEnvelope } from 'react-icons/fa6';
+import { FaGithub, FaLinkedin, FaEnvelope, FaWhatsapp } from 'react-icons/fa6';
 import { profile } from '../data/portfolio';
 
 export default function Socials({ className = '' }) {
@@ -9,6 +9,9 @@ export default function Socials({ className = '' }) {
       </a>
       <a href="https://www.linkedin.com/in/hamza-arabi/" target="_blank" rel="noreferrer" aria-label="Hamza on LinkedIn" className="social-btn">
         <FaLinkedin />
+      </a>
+      <a href={profile.whatsappLink} target="_blank" rel="noreferrer" aria-label={`Chat with ${profile.fullName} on WhatsApp`} className="social-btn">
+        <FaWhatsapp />
       </a>
       <a href={`mailto:${profile.email}`} aria-label={`Email ${profile.fullName}`} className="social-btn">
         <FaEnvelope />

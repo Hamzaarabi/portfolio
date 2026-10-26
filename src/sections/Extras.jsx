@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaChevronDown, FaDownload } from 'react-icons/fa6';
+import { FaArrowRight, FaBriefcase, FaChevronDown, FaDownload, FaRocket, FaScrewdriverWrench, FaWhatsapp } from 'react-icons/fa6';
 import { traits, process, faqs, profile } from '../data/portfolio';
 import SectionHeading from '../components/SectionHeading';
 import Reveal from '../components/Reveal';
@@ -90,6 +90,69 @@ export function FaqSection() {
   );
 }
 
+export function WorkWithMeSection() {
+  const ways = [
+    {
+      icon: FaRocket,
+      title: 'Freelance project',
+      desc: 'A website, online store or business tool — scoped clearly, designed in Figma, built and launched by me. Fastest start: message me on WhatsApp with your idea.',
+      cta: 'Discuss on WhatsApp',
+      href: profile.whatsappLink,
+      external: true,
+    },
+    {
+      icon: FaBriefcase,
+      title: 'Full-time / contract role',
+      desc: 'Looking for a full-stack developer (React · Laravel · Symfony · SQL) who can join your team and ship from week one? Grab my CV or book a short call.',
+      cta: 'Download my CV',
+      href: profile.cv,
+      download: true,
+    },
+    {
+      icon: FaScrewdriverWrench,
+      title: 'Maintenance & support',
+      desc: 'Already have a website or ERP/business tool that needs fixes, updates or new features? I keep production sites running smoothly at my current company — I can do the same for yours.',
+      cta: 'Ask for support',
+      href: '/contact',
+    },
+  ];
+  return (
+    <section className="section alt" id="work-with-me">
+      <div className="container-x">
+        <SectionHeading
+          eyebrow="Work with me"
+          title="Three ways we can work together"
+          sub="Whether you are a business owner with a project, or a recruiter with a role to fill — pick the path that fits and let's talk today."
+        />
+        <div className="services-grid">
+          {ways.map((w, i) => (
+            <Reveal key={w.title} delay={i * 90}>
+              <article className="service-card work-card">
+                <span className="service-icon"><w.icon /></span>
+                <h3>{w.title}</h3>
+                <p>{w.desc}</p>
+                {w.external ? (
+                  <a className="text-link work-card-link" href={w.href} target="_blank" rel="noreferrer">
+                    <FaWhatsapp /> {w.cta}
+                  </a>
+                ) : w.download ? (
+                  <a className="text-link work-card-link" href={w.href} download="Hamza-CV.pdf">
+                    <FaDownload /> {w.cta}
+                  </a>
+                ) : (
+                  <Link className="text-link work-card-link" to={w.href}>
+                    {w.cta} <FaArrowRight />
+                  </Link>
+                )}
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function CtaBanner() {
   return (
     <section className="section cta-section">
@@ -100,7 +163,10 @@ export function CtaBanner() {
             <h2>Have a project in mind?<br />Let's build it together.</h2>
             <p>Tell me about your idea — I'll reply with honest advice, a clear plan and a fair estimate.</p>
             <div className="hero-cta center">
-              <Link to="/contact" className="btn btn-primary">Start a conversation <FaArrowRight /></Link>
+              <a href={profile.whatsappLink} target="_blank" rel="noreferrer" className="btn btn-primary">
+                <FaWhatsapp /> Chat on WhatsApp
+              </a>
+              <Link to="/contact" className="btn btn-ghost light">Start a conversation <FaArrowRight /></Link>
               <a href={profile.cv} download="Hamza-CV.pdf" className="btn btn-ghost light">
                 <FaDownload /> Download CV
               </a>

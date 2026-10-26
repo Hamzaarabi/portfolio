@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import emailjs from '@emailjs/browser';
 import {
-  FaCheck, FaCopy, FaEnvelope, FaLocationDot, FaPaperPlane, FaPhone, FaTriangleExclamation,
+  FaCheck, FaCopy, FaEnvelope, FaLocationDot, FaPaperPlane, FaPhone, FaTriangleExclamation, FaWhatsapp,
 } from 'react-icons/fa6';
 import useTitle from '../hooks/useTitle';
 import { profile, emailjsConfig } from '../data/portfolio';
@@ -96,10 +96,18 @@ export default function Contact() {
                   </button>
                 </div>
 
+                <div className="contact-card whatsapp-card">
+                  <span className="service-icon"><FaWhatsapp /></span>
+                  <div>
+                    <small>WhatsApp — fastest reply</small>
+                    <a href={profile.whatsappLink} target="_blank" rel="noreferrer">{profile.whatsappDisplay}</a>
+                  </div>
+                </div>
+
                 <div className="contact-card">
                   <span className="service-icon"><FaPhone /></span>
                   <div>
-                    <small>Phone / WhatsApp</small>
+                    <small>Phone</small>
                     <a href={`tel:${profile.phone}`}>{profile.phoneDisplay}</a>
                   </div>
                 </div>
@@ -137,9 +145,17 @@ export default function Contact() {
                 </div>
 
                 <div className="field">
-                  <label htmlFor="subject">Subject</label>
-                  <input id="subject" name="subject" type="text" placeholder="New project, job opportunity…"
-                    value={form.subject} onChange={set('subject')} />
+                  <label htmlFor="subject">I need help with</label>
+                  <select id="subject" name="subject" value={form.subject} onChange={set('subject')}>
+                    <option value="">Select a topic…</option>
+                    <option value="Freelance project">Freelance project</option>
+                    <option value="Job opportunity">Job opportunity (full-time / contract)</option>
+                    <option value="Business website">Business website</option>
+                    <option value="E-commerce store">E-commerce store</option>
+                    <option value="ERP / management software">ERP / management software</option>
+                    <option value="Maintenance / support">Maintenance / support</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
 
                 <div className="field">

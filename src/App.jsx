@@ -4,6 +4,7 @@ import { FaArrowUp } from 'react-icons/fa6';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CommandPalette from './components/CommandPalette';
+import WhatsAppFloat from './components/WhatsAppFloat';
 import { useTheme } from './hooks/hooks';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -131,6 +132,7 @@ export default function App() {
         </Suspense>
       </main>
       <Footer />
+      <WhatsAppFloat />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}

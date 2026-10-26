@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { FaBars, FaMoon, FaSun, FaXmark, FaArrowRight } from 'react-icons/fa6';
 import { navLinks } from '../data/portfolio';
+import Logo from '../assets/logo.webp';
 
 export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
   const [open, setOpen] = useState(false);
@@ -27,7 +28,7 @@ export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
     <header className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="container-x nav-inner">
         <Link to="/" className="brand" aria-label="Hamza — home">
-          <span className="brand-mark">HA</span>
+          <img src={Logo} alt="Hamza logo" className="brand-logo" />
           <span className="brand-text">Hamza<em>.dev</em></span>
         </Link>
 

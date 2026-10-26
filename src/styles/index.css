@@ -187,6 +187,7 @@ kbd {
   box-shadow: 0 8px 20px -8px var(--glow);
 }
 .brand-text em { font-style: normal; color: var(--accent-2); }
+.brand-logo { height: 34px; width: auto; flex: none; display: block; }
 .nav-links { display: flex; gap: 0.4rem; }
 .nav-link {
   padding: 0.5rem 0.85rem; border-radius: 999px; font-weight: 500; font-size: 0.94rem;
@@ -651,12 +652,12 @@ kbd {
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
 .field { margin-bottom: 1.1rem; }
 .field label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.45rem; }
-.field input, .field textarea {
+.field input, .field textarea, .field select {
   width: 100%; padding: 0.8rem 1rem; border-radius: 11px; font: inherit; font-size: 0.94rem;
   background: var(--input-bg); border: 1px solid var(--border); color: var(--text);
   transition: border-color 0.2s, box-shadow 0.2s; resize: vertical;
 }
-.field input:focus, .field textarea:focus {
+.field input:focus, .field textarea:focus, .field select:focus {
   outline: none; border-color: var(--accent-2);
   box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
 }
@@ -694,6 +695,23 @@ kbd {
   transition: all 0.35s var(--ease);
 }
 .back-top.show { opacity: 1; pointer-events: auto; transform: none; }
+.whatsapp-float {
+  position: fixed; left: 22px; bottom: 22px; z-index: 100;
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  padding: 0.8rem 1.1rem; border-radius: 999px;
+  background: #25d366; color: #04240f; font-weight: 700; font-size: 0.92rem;
+  box-shadow: 0 16px 36px -12px rgba(37, 211, 102, 0.65);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s;
+}
+.whatsapp-float svg { font-size: 1.35rem; }
+.whatsapp-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 20px 42px -12px rgba(37, 211, 102, 0.8); }
+.work-card { display: flex; flex-direction: column; }
+.work-card p { flex: 1; }
+.work-card-link { margin-top: 1.2rem; }
+@media (max-width: 600px) {
+  .whatsapp-float span { display: none; }
+  .whatsapp-float { padding: 0.85rem; border-radius: 50%; }
+}
 .page-fallback { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
 .spinner {
   width: 44px; height: 44px; border-radius: 50%;

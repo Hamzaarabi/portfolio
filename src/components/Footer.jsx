@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { FaArrowUp, FaEnvelope, FaLocationDot, FaPhone } from 'react-icons/fa6';
+import { FaArrowUp, FaEnvelope, FaLocationDot, FaPhone, FaWhatsapp } from 'react-icons/fa6';
 import { navLinks, profile } from '../data/portfolio';
 import Socials from './Socials';
+import Logo from '../assets/logo.webp';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -11,7 +12,7 @@ export default function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <Link to="/" className="brand">
-              <span className="brand-mark">HA</span>
+              <img src={Logo} alt="Hamza logo" className="brand-logo" />
               <span className="brand-text">Hamza<em>.dev</em></span>
             </Link>
             <p>{profile.tagline}</p>
@@ -28,15 +29,16 @@ export default function Footer() {
           <div className="footer-col">
             <h3>Expertise</h3>
             <span>React Development</span>
-            <span>Laravel & REST APIs</span>
-            <span>UI/UX Design</span>
-            <span>SEO & Performance</span>
-            <span>Mobile Apps (Capacitor)</span>
+            <span>Laravel & Symfony APIs</span>
+            <span>SQL Server · MySQL · MongoDB</span>
+            <span>Sage ERP & Business Tools</span>
+            <span>E-Commerce & SEO</span>
           </div>
 
           <div className="footer-col">
             <h3>Get in touch</h3>
             <a href={`mailto:${profile.email}`}><FaEnvelope /> {profile.email}</a>
+            <a href={profile.whatsappLink} target="_blank" rel="noreferrer"><FaWhatsapp /> WhatsApp {profile.whatsappDisplay}</a>
             <a href={`tel:${profile.phone}`}><FaPhone /> {profile.phoneDisplay}</a>
             <span><FaLocationDot /> {profile.location} · Remote worldwide</span>
             <button type="button" className="to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
