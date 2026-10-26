@@ -60,9 +60,10 @@ Edit it and every page updates automatically. Drop new project screenshots
 
 ## 📦 Deployment
 
-- **GitHub Pages** — every push to `main` builds & deploys via
-  [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
-  (enable *Settings → Pages → Source: GitHub Actions*), or run `npm run deploy` manually.
+- **GitHub Pages** — every push to `main` builds in CI and publishes the result to the
+  `gh-pages` branch via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+  Keep *Settings → Pages → Build and deployment* on **"Deploy from a branch: `gh-pages` / (root)"**.
+  You can also publish manually anytime with `npm run deploy` (same destination).
 - **Vercel** — import the repo; [`vercel.json`](vercel.json) already contains the
   build settings, SPA rewrites, security headers and immutable asset caching.
 
