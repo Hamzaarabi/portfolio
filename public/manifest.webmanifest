@@ -1,0 +1,12 @@
+{
+  "name": "Hamza — Full-Stack Web Developer",
+  "short_name": "Hamza",
+  "description": "Portfolio of Arabi Hamza, full-stack web developer (React & Laravel).",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#050807",
+  "theme_color": "#050807",
+  "icons": [
+    { "src": "./favicon.png", "sizes": "256x256", "type": "image/png" }
+  ]
+}
