@@ -17,8 +17,32 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 function RouteEffects() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' }); }, [pathname]);
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }, [pathname]);
   return null;
+}
+
+/**
+ * Skip-to-content link for keyboard/screen-reader users.
+ * Uses a click handler instead of a bare href="#main" because with
+ * HashRouter changing location.hash would be parsed as a route change.
+ */
+function SkipLink() {
+  return (
+    <a
+      href="#main"
+      className="skip-link"
+      onClick={(e) => {
+        e.preventDefault();
+        const main = document.getElementById('main');
+        if (main) {
+          main.focus({ preventScroll: false });
+          main.scrollIntoView();
+        }
+      }}
+    >
+      Skip to content
+    </a>
+  );
 }
 
 function ScrollChrome() {
@@ -85,7 +109,7 @@ export default function App() {
       <RouteEffects />
       <ScrollChrome />
       <Navbar theme={theme} onToggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)} />
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Home />} />
