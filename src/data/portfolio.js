@@ -444,7 +444,7 @@ export const faqs = [
 
 /* ── EmailJS (override via .env — see .env.example) ───────── */
 export const emailjsConfig = {
-  serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_ivf641j',
+  serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_515wdme',
   templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_mmzghiq',
   publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'AgiXKpwtjZv_5nBNa',
 };
