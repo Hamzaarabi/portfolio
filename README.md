@@ -17,13 +17,13 @@ Personal portfolio of **Arabi Hamza**, full-stack web developer based in morocco
 - **⌘K command palette** — quick navigation, copy email, download CV, theme switch
 - **Three languages** — English, Français and العربية with a persistent navbar switcher, translated portfolio content, Arabic RTL layout and Arabic fonts
 - **Portfolio chatbot** — trilingual smart FAQ assistant for services, projects, skills, hiring, CV and WhatsApp contact; its Ask AI button sits above WhatsApp on the bottom-right
-- **Local Admin area (`/admin`)** — password-locked on the device; add skills/projects, edit work experience and configure EmailJS, with JSON backup/import
+- **Supabase Admin area (`/#/admin`)** — real Supabase Auth + Postgres/RLS/Realtime/Storage; manage skills, projects, experience, EmailJS settings and contact messages for every visitor
 - **Project case studies** — filter + search, WebP galleries with keyboard-accessible lightbox, prev/next navigation
 - **Animated experience** — typewriter hero, counting stats, scroll-reveal sections, animated skill bars, marquee
 - **Performance** — 68 images converted PNG → WebP (**~22 MB → 2.6 MB**), route-level code splitting, lazy images; total build ≈ 3.2 MB
 - **SEO ready** — meta/OG/Twitter tags, JSON-LD `Person` schema, `sitemap.xml`, `robots.txt`, semantic HTML, per-page titles
 - **Accessible** — skip link, ARIA labels, focus states, `prefers-reduced-motion` support, labelled form with validation
-- **Working contact form** — EmailJS with validation, honeypot anti-spam and success/error feedback
+- **Working contact form** — saves to a private Supabase inbox and sends through EmailJS, with validation and honeypot anti-spam
 - **Legacy-proof** — old v1 routes (`/AboutMe`, `/Projects`…) redirect to the new ones
 
 ## 🛠 Tech stack
@@ -34,7 +34,8 @@ Personal portfolio of **Arabi Hamza**, full-stack web developer based in morocco
 | Build | Vite 6 |
 | Styling | Hand-written CSS design system (no framework) |
 | Icons | react-icons |
-| Forms | EmailJS |
+| Backend | Supabase Postgres, Auth, Row Level Security, Realtime and Storage |
+| Forms | Supabase contact inbox + EmailJS delivery |
 | Hosting | GitHub Pages (Actions) · Vercel-ready |
 
 ## 🚀 Quick start
@@ -53,10 +54,12 @@ npm run dev       # http://localhost:5173
 
 ## ✏️ Editing content
 
-Published default content lives in [`src/data/portfolio.js`](src/data/portfolio.js) —
-profile, services, skills, experience, education, projects, FAQ.
-Edit it and every page updates automatically. Drop new project screenshots
-(WebP) into `src/assets/webp/projectN/` and they appear in the gallery in filename order.
+The seed/fallback copy lives in [`src/data/portfolio.js`](src/data/portfolio.js). Once the
+Supabase migration is applied, Admin-managed skills, projects, work experience,
+EmailJS settings and contact messages come from Supabase and update every visitor
+without a redeploy. Profile/services/education/FAQ copy remains versioned in code.
+Project screenshots bundled with the site stay in `src/assets/webp/projectN/`; new
+Admin cover uploads go to the Supabase Storage bucket `portfolio-media`.
 
 ### Languages (English / Français / العربية)
 
@@ -66,24 +69,53 @@ visit, the browser language is used when it is English, French or Arabic. UI cop
 live in `src/i18n/localizeContent.js`. Arabic switches the document to RTL. Custom skills,
 projects and experience created in Admin keep the text entered by the owner.
 
-### Admin area (`/#/admin`)
+### Supabase backend + Admin area (`/#/admin`)
 
-Open `/#/admin` directly by URL (it is intentionally not linked from the public navigation or footer), create a local password on first use, then:
+The Supabase project is `edplthwtzxdrqitdupvi`. The browser uses only the
+**publishable** key from `src/lib/supabase.js` (or `VITE_SUPABASE_PUBLISHABLE_KEY`);
+never put a Supabase secret/service-role key or an EmailJS private key in front-end code.
 
-- add/edit custom **skills** (group, level, colour and icon style)
-- add/edit custom **projects** (details, stack, features, cover URL/upload and links)
-- hide/restore built-in projects locally
+Database objects are versioned in
+[`supabase/migrations/20261027153000_create_portfolio_backend.sql`](supabase/migrations/20261027153000_create_portfolio_backend.sql):
+
+- `portfolio_skill_groups` and `portfolio_skills`
+- `portfolio_projects` (including draft/published state)
+- `portfolio_experience`
+- `site_settings` (EmailJS Service ID, Template ID and Public Key)
+- `contact_messages` (public insert only; admin-only inbox)
+- public Storage bucket `portfolio-media` for Admin project-cover uploads
+- RLS: everyone can read published content; only the authenticated owner
+  (`arabihamzaaa@gmail.com`, or app role `admin`) can write/read messages.
+
+#### First-time production setup
+
+1. In Supabase Dashboard → **Project Settings → Integrations → GitHub**, keep this
+   repository connected, set the production branch to `main`, and enable
+   **Deploy to production**. Merging the migration to `main` then applies it and
+   seeds the current portfolio. If that option is off, paste/run the migration SQL
+   once in **SQL Editor** instead.
+2. In **Authentication → Users**, create and confirm the owner user
+   `arabihamzaaa@gmail.com` with a strong password. There is intentionally no public
+   sign-up form in Admin.
+3. In **Authentication → Providers/Settings**, disable public email sign-ups after
+   creating the owner (the RLS admin check is still enforced either way).
+4. Open `/#/admin` directly by URL (it is intentionally not linked publicly), sign in,
+   and check **Backup / Data → Supabase status** says live.
+5. If the old browser-local Admin had changes, use **Migrate old local data** once,
+   verify the public site, then clear the local copy.
+
+From Admin you can now, for every visitor and from any device:
+
+- add/edit/delete **skills** and skill groups
+- add/edit/delete/publish/unpublish **projects**, including Supabase Storage cover uploads
 - reorder and fully edit **work experience**
-- configure the **EmailJS** Service ID, Template ID and Public Key, send a test email, or reset to the published defaults
-- export/import all local changes as JSON (including EmailJS settings)
-
-> This is a static GitHub Pages site, so Admin changes are stored in the browser's
-> `localStorage` rather than a public server database. Export the JSON and commit its
-> content into `src/data/portfolio.js` to publish changes for every visitor, or connect
-> a backend/CMS such as Supabase/Firebase for a multi-device production admin.
+- read/reply/status/delete **contact messages** saved from the Contact form
+- configure **EmailJS**, send a test email, or reset it to code defaults
+- export/import Supabase content as version-2 JSON (older local backups also import)
 
 - Replace the résumé by overwriting `public/Hamza-CV.pdf`
-- Optional: copy `.env.example` → `.env` to use your own EmailJS keys at build time. In Admin → **EmailJS**, edit the Service ID, Template ID and Public Key, click **Save email settings**, then use **Send test email** or open the Contact form. The Admin override applies in that browser; change `src/data/portfolio.js` (or the build environment variables) and redeploy to publish new defaults for everyone. Never put an EmailJS **private key** in this front-end.
+- Optional: copy `.env.example` → `.env` to point a preview/fork at another Supabase
+  project or override EmailJS fallbacks at build time.
 
 ## 📦 Deployment
 
@@ -100,7 +132,8 @@ Open `/#/admin` directly by URL (it is intentionally not linked from the public 
 src/
   data/portfolio.js     ← published default content
   i18n/                 ← English/French/Arabic translations + content localization
-  content/              ← runtime content provider + local Admin overlay
+  lib/supabase.js       ← browser Supabase client (publishable key only)
+  content/              ← Supabase content provider, realtime sync + legacy-local migration
   pages/                ← Home, About, Services, Skills, Projects(+Details), Contact, Admin, 404
   sections/             ← Hero, About, Services, Projects, Skills, Journey, Extras
   components/           ← Navbar, Footer, CommandPalette, ChatBot, Lightbox, ProjectCard…
@@ -108,6 +141,7 @@ src/
   styles/index.css      ← the whole design system
   assets/webp/          ← optimised project imagery
 public/                 ← CV, favicon, OG image, manifest, robots, sitemap
+supabase/migrations/    ← Postgres schema, RLS policies, Storage bucket and seed
 ```
 
 ## 📜 v1 → v2 changelog

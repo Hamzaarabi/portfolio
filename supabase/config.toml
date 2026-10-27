@@ -1,0 +1,4 @@
+# Marks this directory as the Supabase project for the GitHub integration
+# and Supabase CLI. Production Auth/API settings remain managed in the
+# Supabase Dashboard; schema changes live in supabase/migrations/.
+project_id = "portfolio"

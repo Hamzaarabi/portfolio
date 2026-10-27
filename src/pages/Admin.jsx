@@ -1,46 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 import {
-  FaBriefcase, FaCheck, FaCode, FaDownload, FaEnvelope, FaEye, FaFloppyDisk, FaFolderOpen,
-  FaGears, FaLock, FaPaperPlane, FaPen, FaPlus, FaRotateLeft, FaTrashCan, FaTriangleExclamation, FaUpload,
+  FaBriefcase, FaCheck, FaCode, FaDatabase, FaDownload, FaEnvelope, FaEnvelopeOpen,
+  FaEye, FaEyeSlash, FaFloppyDisk, FaFolderOpen, FaGears, FaInbox, FaLock,
+  FaPaperPlane, FaPen, FaPlus, FaRightFromBracket, FaRotateLeft, FaTrashCan,
+  FaTriangleExclamation, FaUpload,
 } from 'react-icons/fa6';
 import useTitle from '../hooks/useTitle';
 import PageHero from '../components/PageHero';
 import { profile } from '../data/portfolio';
 import { SKILL_ICON_OPTIONS, usePortfolioContent } from '../content/PortfolioContentContext';
+import {
+  ADMIN_EMAIL, SUPABASE_PROJECT_REF, SUPABASE_URL, isAdminUser, supabase, supabaseErrorMessage,
+} from '../lib/supabase';
 
-const ADMIN_HASH_KEY = 'hamza-portfolio-admin-hash-v1';
-const ADMIN_SESSION_KEY = 'hamza-portfolio-admin-session-v1';
 const PROJECT_CATEGORIES = ['Full-Stack', 'Frontend', 'Mobile'];
-
-async function hashPassword(password) {
-  const source = `hamza-portfolio-admin:${password}`;
-  if (window.crypto?.subtle) {
-    const buffer = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
-    return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-  }
-  // Fallback for non-secure contexts. This local lock is only an editing guard,
-  // not server authentication.
-  let hash = 5381;
-  for (let i = 0; i < source.length; i++) hash = ((hash << 5) + hash + source.charCodeAt(i)) >>> 0;
-  return `fallback-${hash.toString(16)}`;
-}
-
-function initialAuthState() {
-  try {
-    const hasHash = Boolean(window.localStorage.getItem(ADMIN_HASH_KEY));
-    if (window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'yes' && hasHash) return 'unlocked';
-    return hasHash ? 'locked' : 'setup';
-  } catch {
-    return 'setup';
-  }
-}
+const MESSAGE_STATUSES = ['new', 'read', 'replied', 'archived'];
 
 const splitLines = (value) => String(value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
 const splitComma = (value) => String(value || '').split(/[,\n]/).map((item) => item.trim()).filter(Boolean);
 const toExperienceDraft = (items) => items.map((item, index) => ({
-  draftId: `${index}-${item.title || 'experience'}-${item.period || ''}`,
+  id: item.id || '',
+  draftId: item.id || `${index}-${item.title || 'experience'}-${item.period || ''}`,
   period: item.period || '',
   title: item.title || '',
   org: item.org || '',
@@ -61,19 +43,22 @@ export default function Admin() {
   useTitle('Admin');
   const content = usePortfolioContent();
   const {
-    skillGroups, projects, experience, defaultExperience, defaultProjects,
-    customSkills, customProjects, deletedProjectSlugs, storageError, isCustomized,
+    skillGroups, skills, projects, allProjects, experience, defaultExperience,
     emailConfig, defaultEmailConfig, hasCustomEmailConfig,
+    contentSource, contentLoading, contentError, isDatabaseConnected,
+    isSupabaseConfigured, supabaseUser, hasLegacyLocalContent,
   } = content;
 
-  const [authState, setAuthState] = useState(initialAuthState);
+  const [sessionChecked, setSessionChecked] = useState(!supabase);
+  const [authEmail, setAuthEmail] = useState(ADMIN_EMAIL);
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [notice, setNotice] = useState('');
   const importInputRef = useRef(null);
+  const isUnlocked = isAdminUser(supabaseUser);
 
   const [editingSkillId, setEditingSkillId] = useState('');
   const [skillForm, setSkillForm] = useState({
@@ -81,12 +66,13 @@ export default function Admin() {
   });
 
   const emptyProjectForm = () => ({
-    title: '', category: 'Full-Stack', year: new Date().getFullYear(), date: '', role: 'Design & Development',
+    slug: '', title: '', category: 'Full-Stack', year: new Date().getFullYear(), date: '', role: 'Design & Development',
     short: '', overview: '', featuresText: '', stackText: '', tagsText: '', cover: '', galleryText: '',
-    live: '', repo: '', featured: false,
+    structure: '', live: '', repo: '', featured: false, published: true,
   });
   const [editingProjectId, setEditingProjectId] = useState('');
   const [projectForm, setProjectForm] = useState(emptyProjectForm);
+  const [projectCoverFile, setProjectCoverFile] = useState(null);
 
   const [draftExperience, setDraftExperience] = useState(() => toExperienceDraft(experience));
   const [experienceDirty, setExperienceDirty] = useState(false);
@@ -94,6 +80,11 @@ export default function Admin() {
   const [emailForm, setEmailForm] = useState(() => ({ ...emailConfig }));
   const [emailDirty, setEmailDirty] = useState(false);
   const [emailTestBusy, setEmailTestBusy] = useState(false);
+
+  const [contactMessages, setContactMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState('');
+  const [messageStatusFilter, setMessageStatusFilter] = useState('all');
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -109,83 +100,130 @@ export default function Admin() {
     if (!emailDirty) setEmailForm({ ...emailConfig });
   }, [emailConfig, emailDirty]);
 
+  useEffect(() => {
+    if (!supabase) {
+      setSessionChecked(true);
+      return undefined;
+    }
+    let mounted = true;
+    supabase.auth.getSession()
+      .catch(() => null)
+      .finally(() => {
+        if (mounted) setSessionChecked(true);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const fetchContactMessages = useCallback(async () => {
+    if (!supabase || !isUnlocked) return;
+    setMessagesLoading(true);
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) {
+      setMessagesError(supabaseErrorMessage(error, 'Could not load contact messages.'));
+    } else {
+      setContactMessages(data || []);
+      setMessagesError('');
+    }
+    setMessagesLoading(false);
+  }, [isUnlocked]);
+
+  useEffect(() => {
+    if (!supabase || !isUnlocked) return undefined;
+    fetchContactMessages();
+    const channel = supabase
+      .channel(`admin-contact-messages-${Date.now()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_messages' }, () => fetchContactMessages())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchContactMessages, isUnlocked]);
+
   const notify = (message) => setNotice(message);
   const totalSkills = skillGroups.reduce((sum, group) => sum + group.skills.length, 0);
-  const hiddenDefaultProjects = defaultProjects.filter((project) => deletedProjectSlugs.includes(project.slug));
+  const unpublishedProjects = allProjects.filter((project) => !project.published);
+  const unreadMessages = contactMessages.filter((message) => message.status === 'new').length;
+  const visibleContactMessages = messageStatusFilter === 'all'
+    ? contactMessages
+    : contactMessages.filter((message) => message.status === messageStatusFilter);
 
-  const unlockSession = () => {
-    try { window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'yes'); } catch { /* session only */ }
-    setAuthState('unlocked');
-    setPassword('');
-    setConfirmPassword('');
-    setAuthError('');
+  const runDatabaseAction = async (action, successMessage) => {
+    if (saving) return null;
+    setSaving(true);
+    try {
+      const result = await action();
+      if (successMessage) notify(successMessage);
+      return result;
+    } catch (error) {
+      notify(supabaseErrorMessage(error, 'The Supabase action failed.'));
+      return null;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAuth = async (event) => {
     event.preventDefault();
     setAuthError('');
-    if (password.length < 6) {
-      setAuthError('Use at least 6 characters for the local admin password.');
+    if (!isSupabaseConfigured) {
+      setAuthError('Supabase is not configured in this build.');
       return;
     }
-    if (authState === 'setup' && password !== confirmPassword) {
-      setAuthError('The two passwords do not match.');
+    if (!authEmail.trim() || !password) {
+      setAuthError('Enter the admin email and password.');
       return;
     }
     setAuthBusy(true);
     try {
-      const hash = await hashPassword(password);
-      if (authState === 'setup') {
-        window.localStorage.setItem(ADMIN_HASH_KEY, hash);
-        unlockSession();
-        notify('Local admin password created. You can now manage portfolio content in this browser.');
-      } else if (hash === window.localStorage.getItem(ADMIN_HASH_KEY)) {
-        unlockSession();
-      } else {
-        setAuthError('Incorrect password. Please try again.');
-      }
-    } catch {
-      setAuthError('Browser storage is unavailable, so the admin lock could not be checked.');
+      await content.signInAdmin(authEmail, password);
+      setPassword('');
+      notify('Signed in to Supabase. Admin changes now publish for every visitor.');
+    } catch (error) {
+      setAuthError(supabaseErrorMessage(error, 'Could not sign in. Check the email/password and confirm the user exists in Supabase Authentication.'));
     } finally {
       setAuthBusy(false);
     }
   };
 
-  const lockAdmin = () => {
-    try { window.sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* ignore */ }
-    setAuthState('locked');
-  };
-
-  const resetAdminLock = () => {
-    if (!window.confirm('Reset the local admin password on this browser? Your saved content will not be deleted.')) return;
+  const signOutAdmin = async () => {
+    setAuthBusy(true);
     try {
-      window.localStorage.removeItem(ADMIN_HASH_KEY);
-      window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
-    } catch { /* ignore */ }
-    setPassword('');
-    setConfirmPassword('');
-    setAuthError('');
-    setAuthState('setup');
+      await content.signOutAdmin();
+      setPassword('');
+      setActiveTab('overview');
+    } catch (error) {
+      notify(supabaseErrorMessage(error, 'Could not sign out.'));
+    } finally {
+      setAuthBusy(false);
+    }
   };
 
-  const handleSkillSubmit = (event) => {
+  const handleSkillSubmit = async (event) => {
     event.preventDefault();
     const group = skillForm.group === '__new' ? skillForm.newGroup.trim() : skillForm.group;
     if (!skillForm.name.trim() || !group) {
       notify('Please add a skill name and choose or create a group.');
       return;
     }
-    const saved = content.addSkill({
+    const saved = await runDatabaseAction(() => content.addSkill({
       id: editingSkillId || undefined,
       name: skillForm.name,
       group,
       level: Number(skillForm.level),
       color: skillForm.color,
       iconKey: skillForm.iconKey,
-    });
-    notify(`${saved.name} ${editingSkillId ? 'updated' : 'added'} to the Skills page.`);
+    }));
+    if (!saved) return;
+    notify(`${saved.name} ${editingSkillId ? 'updated' : 'added'} in Supabase and published to Skills.`);
     setEditingSkillId('');
     setSkillForm({ name: '', group: 'Tools & Business', newGroup: '', level: 70, color: '#2b9e7a', iconKey: 'code' });
+  };
+
+  const handleDeleteSkill = async (skill) => {
+    if (!window.confirm(`Delete ${skill.name} from Supabase for every visitor?`)) return;
+    await runDatabaseAction(() => content.deleteSkill(skill.id), `${skill.name} deleted from Supabase.`);
   };
 
   const startEditSkill = (skill) => {
@@ -208,24 +246,26 @@ export default function Admin() {
       notify('Please choose an image file for the project cover.');
       return;
     }
-    if (file.size > 1_500_000) {
-      notify('This image is too large for browser storage. Please use an image under 1.5 MB or paste an image URL.');
+    if (file.size > 5_000_000) {
+      notify('Please use a project cover under 5 MB, or paste an image URL.');
       return;
     }
+    setProjectCoverFile(file);
     const reader = new FileReader();
     reader.onload = () => setProjectForm((form) => ({ ...form, cover: String(reader.result || '') }));
-    reader.onerror = () => notify('The selected image could not be read.');
+    reader.onerror = () => notify('The selected image could not be previewed.');
     reader.readAsDataURL(file);
   };
 
-  const handleProjectSubmit = (event) => {
+  const handleProjectSubmit = async (event) => {
     event.preventDefault();
     if (!projectForm.title.trim() || !projectForm.short.trim()) {
       notify('Please add at least a project title and short description.');
       return;
     }
-    const saved = content.addProject({
+    const saved = await runDatabaseAction(() => content.addProject({
       id: editingProjectId || undefined,
+      slug: projectForm.slug,
       title: projectForm.title,
       category: projectForm.category,
       year: Number(projectForm.year),
@@ -236,20 +276,25 @@ export default function Admin() {
       features: splitLines(projectForm.featuresText),
       stack: splitComma(projectForm.stackText),
       tags: splitComma(projectForm.tagsText),
-      cover: projectForm.cover,
+      cover: projectCoverFile ? '' : projectForm.cover,
       gallery: splitLines(projectForm.galleryText),
+      structure: projectForm.structure,
       live: projectForm.live,
       repo: projectForm.repo,
       featured: projectForm.featured,
-    });
-    notify(`${saved.title} ${editingProjectId ? 'updated' : 'added'}. It is now visible in Projects.`);
+      published: projectForm.published,
+    }, projectCoverFile));
+    if (!saved) return;
+    notify(`${saved.title} ${editingProjectId ? 'updated' : 'added'} in Supabase${saved.published ? ' and published.' : ' as a draft.'}`);
     setEditingProjectId('');
     setProjectForm(emptyProjectForm());
+    setProjectCoverFile(null);
   };
 
   const startEditProject = (project) => {
     setEditingProjectId(project.id || '');
     setProjectForm({
+      slug: project.slug || '',
       title: project.title || '',
       category: project.category || 'Full-Stack',
       year: project.year || new Date().getFullYear(),
@@ -262,11 +307,26 @@ export default function Admin() {
       tagsText: (project.tags || []).join(', '),
       cover: project.cover || '',
       galleryText: (project.gallery || []).join('\n'),
+      structure: project.structure || '',
       live: project.live || '',
       repo: project.repo || '',
       featured: Boolean(project.featured),
+      published: project.published !== false,
     });
+    setProjectCoverFile(null);
     setActiveTab('projects');
+  };
+
+  const handleDeleteProject = async (project) => {
+    if (!window.confirm(`Delete ${project.title} from Supabase for every visitor? This cannot be undone from Admin.`)) return;
+    await runDatabaseAction(() => content.deleteProject(project), `${project.title} deleted from Supabase.`);
+  };
+
+  const handleToggleProjectPublished = async (project) => {
+    await runDatabaseAction(
+      () => content.setProjectPublished(project, !project.published),
+      `${project.title} is now ${project.published ? 'a draft' : 'published'}.`
+    );
   };
 
   const updateExperienceItem = (draftId, field, value) => {
@@ -287,9 +347,10 @@ export default function Admin() {
     });
   };
 
-  const handleExperienceSave = (event) => {
+  const handleExperienceSave = async (event) => {
     event.preventDefault();
     const cleaned = draftExperience.map((item) => ({
+      id: item.id || undefined,
       period: item.period.trim(),
       title: item.title.trim(),
       org: item.org.trim(),
@@ -299,9 +360,19 @@ export default function Admin() {
       notify('Each experience needs a period, job title and organisation.');
       return;
     }
-    content.saveExperience(cleaned);
+    const saved = await runDatabaseAction(() => content.saveExperience(cleaned));
+    if (!saved) return;
     setExperienceDirty(false);
-    notify('Work experience updated on the Home and About pages.');
+    notify('Work experience saved in Supabase and updated on Home and About.');
+  };
+
+  const handleResetExperience = async () => {
+    if (!window.confirm('Replace the Supabase work-experience timeline with the published code defaults?')) return;
+    const saved = await runDatabaseAction(() => content.resetExperience());
+    if (!saved) return;
+    setDraftExperience(toExperienceDraft(defaultExperience));
+    setExperienceDirty(false);
+    notify('Work experience reset in Supabase to the published defaults.');
   };
 
   const updateEmailForm = (field, value) => {
@@ -327,21 +398,23 @@ export default function Admin() {
     return true;
   };
 
-  const handleEmailConfigSave = (event) => {
+  const handleEmailConfigSave = async (event) => {
     event.preventDefault();
     const config = cleanedEmailForm();
     if (!validateEmailForm(config)) return;
-    content.saveEmailConfig(config);
+    const saved = await runDatabaseAction(() => content.saveEmailConfig(config));
+    if (!saved) return;
     setEmailForm(config);
     setEmailDirty(false);
-    notify('EmailJS configuration saved in this browser. The Contact form now uses it here.');
+    notify('EmailJS configuration saved in Supabase. Every visitor now uses it.');
   };
 
-  const resetEmailConfig = () => {
-    content.resetEmailConfig();
+  const resetEmailConfig = async () => {
+    const saved = await runDatabaseAction(() => content.resetEmailConfig());
+    if (!saved) return;
     setEmailForm({ ...defaultEmailConfig });
     setEmailDirty(false);
-    notify('EmailJS configuration reset to the published defaults.');
+    notify('EmailJS configuration reset in Supabase to the published defaults.');
   };
 
   const discardEmailChanges = () => {
@@ -388,73 +461,170 @@ export default function Admin() {
 
   const importData = async (file) => {
     if (!file) return;
-    try {
-      content.importContent(await file.text());
+    if (!window.confirm('Import this JSON into Supabase? It will replace the live skills, projects, experience and EmailJS settings for every visitor.')) return;
+    const saved = await runDatabaseAction(async () => content.importContent(await file.text()));
+    if (saved) {
       setExperienceDirty(false);
       setEmailDirty(false);
-      notify('Portfolio content imported successfully.');
-    } catch {
-      notify('Import failed. Please choose a valid portfolio-content-backup.json file.');
-    } finally {
-      if (importInputRef.current) importInputRef.current.value = '';
+      notify('Portfolio content imported into Supabase successfully.');
     }
+    if (importInputRef.current) importInputRef.current.value = '';
   };
 
-  if (authState !== 'unlocked') {
-    const isSetup = authState === 'setup';
+  const handleSeedDefaults = async () => {
+    const message = isDatabaseConnected
+      ? 'Reset all Supabase portfolio content to the published code defaults? Export a backup first if needed.'
+      : 'Seed Supabase with the currently published portfolio defaults?';
+    if (!window.confirm(message)) return;
+    const saved = await runDatabaseAction(() => content.resetContent());
+    if (!saved) return;
+    setDraftExperience(toExperienceDraft(defaultExperience));
+    setExperienceDirty(false);
+    setEmailForm({ ...defaultEmailConfig });
+    setEmailDirty(false);
+    notify(isDatabaseConnected ? 'Supabase content reset to published defaults.' : 'Supabase seeded with the published portfolio defaults.');
+  };
+
+  const handleMigrateLocalContent = async (clearAfterImport) => {
+    if (!window.confirm('Copy this browser’s old local Admin data into Supabase? This replaces the live database content with the local merged version.')) return;
+    const saved = await runDatabaseAction(() => content.migrateLocalContent({ clearAfterImport }));
+    if (!saved) return;
+    setExperienceDirty(false);
+    setEmailDirty(false);
+    notify(clearAfterImport
+      ? 'Old local Admin data migrated to Supabase and cleared from this browser.'
+      : 'Old local Admin data migrated to Supabase. You can clear the local copy after checking the site.');
+  };
+
+  const handleClearLocalLegacy = () => {
+    if (!window.confirm('Remove the old local Admin content copy from this browser? Supabase data will not be changed.')) return;
+    content.clearLocalLegacyContent();
+    try {
+      window.localStorage.removeItem('hamza-portfolio-admin-hash-v1');
+      window.sessionStorage.removeItem('hamza-portfolio-admin-session-v1');
+    } catch { /* storage unavailable */ }
+    notify('Old local Admin data removed from this browser.');
+  };
+
+  const handleMessageStatus = async (message, status) => {
+    if (!supabase) return;
+    const saved = await runDatabaseAction(async () => {
+      const { error } = await supabase.from('contact_messages').update({ status }).eq('id', message.id);
+      if (error) throw error;
+      await fetchContactMessages();
+      return true;
+    });
+    if (saved) notify(`Message from ${message.name} marked as ${status}.`);
+  };
+
+  const handleDeleteMessage = async (message) => {
+    if (!supabase || !window.confirm(`Delete the message from ${message.name}?`)) return;
+    const saved = await runDatabaseAction(async () => {
+      const { error } = await supabase.from('contact_messages').delete().eq('id', message.id);
+      if (error) throw error;
+      await fetchContactMessages();
+      return true;
+    });
+    if (saved) notify('Contact message deleted.');
+  };
+
+  if (!sessionChecked || (supabase && !supabaseUser && contentLoading && !isUnlocked)) {
     return (
       <>
         <PageHero
           eyebrow="Private area"
           title="Portfolio administration"
-          sub="Manage skills, projects, work experience and EmailJS settings from this browser. A local password protects the editor on this device."
+          sub="Checking your Supabase session…"
+        />
+        <section className="section admin-auth-section">
+          <div className="container-x narrow">
+            <div className="form admin-auth-card" role="status">
+              <span className="service-icon admin-auth-icon"><FaDatabase aria-hidden="true" /></span>
+              <h2>Connecting to Supabase…</h2>
+              <p>Loading the real portfolio database and your admin session.</p>
+            </div>
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  if (!isUnlocked) {
+    const authUsersUrl = SUPABASE_PROJECT_REF
+      ? `https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/auth/users`
+      : 'https://supabase.com/dashboard';
+    return (
+      <>
+        <PageHero
+          eyebrow="Private area"
+          title="Portfolio administration"
+          sub="Sign in with Supabase Auth to manage the real portfolio database. Changes publish for every visitor."
         />
         <section className="section admin-auth-section">
           <div className="container-x narrow">
             <form className="form admin-auth-card" onSubmit={handleAuth}>
               <span className="service-icon admin-auth-icon"><FaLock aria-hidden="true" /></span>
-              <h2>{isSetup ? 'Create your local admin password' : 'Unlock administration'}</h2>
+              <h2>Supabase admin sign-in</h2>
               <p>
-                {isSetup
-                  ? 'This password is stored as a hash in this browser only. Do not reuse an important banking/email password.'
-                  : 'Enter the local password created on this device to manage portfolio content.'}
+                Use the owner account <strong>{ADMIN_EMAIL}</strong>. Row Level Security allows writes only from
+                this authenticated admin email (or an account with app role <code>admin</code>).
               </p>
+              {!isSupabaseConfigured && (
+                <p className="form-status error" role="alert">
+                  <FaTriangleExclamation aria-hidden="true" /> Supabase is not configured in this build.
+                </p>
+              )}
+              {supabaseUser && !isUnlocked && (
+                <p className="form-status error" role="alert">
+                  <FaTriangleExclamation aria-hidden="true" /> {supabaseUser.email} is signed in, but it is not the authorized portfolio admin.
+                </p>
+              )}
+              {contentError && (
+                <p className="form-status error" role="alert">
+                  <FaTriangleExclamation aria-hidden="true" /> {contentError}
+                </p>
+              )}
               {authError && <p className="form-status error" role="alert"><FaTriangleExclamation aria-hidden="true" /> {authError}</p>}
-              <Field id="admin-password" label={isSetup ? 'New password' : 'Password'}>
+              <Field id="admin-email" label="Admin email">
+                <input
+                  id="admin-email"
+                  type="email"
+                  value={authEmail}
+                  onChange={(event) => setAuthEmail(event.target.value)}
+                  autoComplete="username"
+                  required
+                />
+              </Field>
+              <Field id="admin-password" label="Password">
                 <input
                   id="admin-password"
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  autoComplete={isSetup ? 'new-password' : 'current-password'}
-                  minLength={6}
+                  autoComplete="current-password"
                   required
                 />
               </Field>
-              {isSetup && (
-                <Field id="admin-password-confirm" label="Confirm password">
-                  <input
-                    id="admin-password-confirm"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    autoComplete="new-password"
-                    minLength={6}
-                    required
-                  />
-                </Field>
-              )}
-              <button type="submit" className="btn btn-primary form-submit" disabled={authBusy}>
-                <FaLock aria-hidden="true" /> {authBusy ? 'Checking…' : isSetup ? 'Create password & open admin' : 'Unlock admin'}
+              <button type="submit" className="btn btn-primary form-submit" disabled={authBusy || !isSupabaseConfigured}>
+                <FaLock aria-hidden="true" /> {authBusy ? 'Signing in…' : 'Sign in to Admin'}
               </button>
-              {!isSetup && (
-                <button type="button" className="text-link admin-reset-lock" onClick={resetAdminLock}>
-                  Forgot it? Reset the local lock on this browser
+              {supabaseUser && !isUnlocked && (
+                <button type="button" className="btn btn-ghost form-submit" onClick={signOutAdmin} disabled={authBusy}>
+                  <FaRightFromBracket aria-hidden="true" /> Sign out this account
                 </button>
               )}
-              <p className="admin-hint">
-                Static-site note: there is no server account/database yet, so edited content is saved in this browser and can be exported as JSON.
-              </p>
+              <div className="admin-note">
+                <FaDatabase aria-hidden="true" />
+                <p>
+                  First time? In Supabase Dashboard → Authentication → Users, create and confirm a user with
+                  {' '}<strong>{ADMIN_EMAIL}</strong>, then disable public sign-ups in Authentication settings.
+                  The database tables are created by the migration in <code>supabase/migrations</code>.
+                </p>
+              </div>
+              <div className="admin-actions-row">
+                <a className="btn btn-ghost btn-sm" href={authUsersUrl} target="_blank" rel="noreferrer">Open Supabase Auth users</a>
+                <a className="btn btn-ghost btn-sm" href={SUPABASE_URL} target="_blank" rel="noreferrer">Project API URL</a>
+              </div>
             </form>
           </div>
         </section>
@@ -467,6 +637,7 @@ export default function Admin() {
     { id: 'skills', label: 'Skills', icon: FaCode },
     { id: 'projects', label: 'Projects', icon: FaFolderOpen },
     { id: 'experience', label: 'Experience', icon: FaBriefcase },
+    { id: 'messages', label: unreadMessages ? `Messages (${unreadMessages})` : 'Messages', icon: FaInbox },
     { id: 'email', label: 'EmailJS', icon: FaEnvelope },
     { id: 'data', label: 'Backup / Data', icon: FaFloppyDisk },
   ];
@@ -476,15 +647,19 @@ export default function Admin() {
       <PageHero
         eyebrow="Administration"
         title="Manage your portfolio"
-        sub="Add skills and projects, edit work experience, configure EmailJS, then preview the public site. Changes save automatically in this browser."
+        sub="Manage real Supabase data: skills, projects, experience, contact messages and EmailJS settings publish for every visitor."
       />
 
       <section className="section admin-section">
         <div className="container-x">
-          {(notice || storageError) && (
-            <p className={`form-status ${storageError ? 'error' : 'success'} admin-status`} role="status">
-              {storageError ? <FaTriangleExclamation aria-hidden="true" /> : <FaCheck aria-hidden="true" />}
-              {storageError || notice}
+          {contentError && (
+            <p className="form-status error admin-status" role="alert">
+              <FaTriangleExclamation aria-hidden="true" /> {contentError}
+            </p>
+          )}
+          {notice && (
+            <p className="form-status success admin-status" role="status">
+              <FaCheck aria-hidden="true" /> {notice}
             </p>
           )}
 
@@ -505,28 +680,35 @@ export default function Admin() {
             </div>
             <div className="admin-toolbar-actions">
               <Link to="/" className="btn btn-ghost btn-sm"><FaEye aria-hidden="true" /> View site</Link>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={lockAdmin}><FaLock aria-hidden="true" /> Lock</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={signOutAdmin} disabled={authBusy}><FaRightFromBracket aria-hidden="true" /> Sign out</button>
             </div>
           </div>
 
           {activeTab === 'overview' && (
             <div className="admin-panel">
               <div className="admin-stat-grid">
-                <article><strong>{totalSkills}</strong><span>Skills displayed</span><small>{customSkills.length} added in admin</small></article>
-                <article><strong>{projects.length}</strong><span>Projects displayed</span><small>{customProjects.length} added in admin</small></article>
-                <article><strong>{experience.length}</strong><span>Work experiences</span><small>{isCustomized ? 'Local changes active' : 'Using published defaults'}</small></article>
+                <article><strong>{totalSkills}</strong><span>Skills</span><small>{skillGroups.length} groups in {isDatabaseConnected ? 'Supabase' : 'fallback'}</small></article>
+                <article><strong>{projects.length}</strong><span>Published projects</span><small>{unpublishedProjects.length} draft{unpublishedProjects.length === 1 ? '' : 's'} · {allProjects.length} total</small></article>
+                <article><strong>{contactMessages.length}</strong><span>Contact messages</span><small>{unreadMessages} new · {experience.length} work experiences</small></article>
               </div>
               <div className="admin-info-card">
-                <h2>How publishing works</h2>
+                <h2><FaDatabase aria-hidden="true" /> Supabase publishing is {isDatabaseConnected ? 'live' : 'waiting for seed'}</h2>
                 <p>
-                  This portfolio is currently a static GitHub Pages site. Admin changes are stored safely in
-                  <strong> this browser</strong>, so you can test new skills/projects immediately. They do not automatically
-                  change the public website for every visitor until the content is exported and committed to the code,
-                  or a real backend/CMS (for example Supabase/Firebase) is connected.
+                  Signed in as <strong>{supabaseUser?.email}</strong>. Portfolio content is stored in Supabase Postgres
+                  {SUPABASE_PROJECT_REF ? <> (<code>{SUPABASE_PROJECT_REF}</code>)</> : null}; visitors read it with the publishable key,
+                  while Row Level Security allows only your admin account to create, update or delete records.
+                  Realtime refreshes are enabled for content tables.
                 </p>
+                {!isDatabaseConnected && (
+                  <p>
+                    The site is showing the code/legacy fallback until the database is seeded. Go to
+                    <strong> Backup / Data</strong> and seed the published defaults or migrate this browser’s old local Admin data.
+                  </p>
+                )}
                 <div className="admin-actions-row">
                   <button type="button" className="btn btn-primary" onClick={() => setActiveTab('skills')}><FaPlus aria-hidden="true" /> Add a skill</button>
                   <button type="button" className="btn btn-ghost" onClick={() => setActiveTab('projects')}><FaPlus aria-hidden="true" /> Add a project</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setActiveTab('messages')}><FaInbox aria-hidden="true" /> Messages</button>
                   <button type="button" className="btn btn-ghost" onClick={() => setActiveTab('email')}><FaEnvelope aria-hidden="true" /> Email settings</button>
                   <button type="button" className="btn btn-ghost" onClick={exportData}><FaDownload aria-hidden="true" /> Export backup</button>
                 </div>
@@ -537,7 +719,7 @@ export default function Admin() {
           {activeTab === 'skills' && (
             <div className="admin-grid">
               <form className="form admin-form" onSubmit={handleSkillSubmit}>
-                <h2>{editingSkillId ? 'Edit custom skill' : 'Add a skill'}</h2>
+                <h2>{editingSkillId ? 'Edit skill' : 'Add a skill'}</h2>
                 <Field id="skill-name" label="Skill name *">
                   <input id="skill-name" value={skillForm.name} onChange={(e) => setSkillForm({ ...skillForm, name: e.target.value })} placeholder="e.g. Docker, Power BI, Sage Paie…" required />
                 </Field>
@@ -568,7 +750,7 @@ export default function Admin() {
                   </Field>
                 </div>
                 <div className="admin-actions-row">
-                  <button type="submit" className="btn btn-primary"><FaFloppyDisk aria-hidden="true" /> {editingSkillId ? 'Save skill' : 'Add skill'}</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}><FaFloppyDisk aria-hidden="true" /> {saving ? 'Saving…' : editingSkillId ? 'Save skill' : 'Add skill'}</button>
                   {editingSkillId && (
                     <button type="button" className="btn btn-ghost" onClick={() => { setEditingSkillId(''); setSkillForm({ name: '', group: 'Tools & Business', newGroup: '', level: 70, color: '#2b9e7a', iconKey: 'code' }); }}>Cancel edit</button>
                   )}
@@ -576,20 +758,20 @@ export default function Admin() {
               </form>
 
               <aside className="admin-side-list">
-                <h2>Skills added in Admin ({customSkills.length})</h2>
-                {customSkills.length === 0 ? (
-                  <p className="empty-state">No custom skills yet. Add one with the form and it appears instantly on the public Skills section in this browser.</p>
-                ) : customSkills.map((skill) => (
+                <h2>Supabase skills ({skills.length})</h2>
+                {skills.length === 0 ? (
+                  <p className="empty-state">No skills yet. Seed the database from Backup / Data or add the first skill.</p>
+                ) : skills.map((skill) => (
                   <article className="admin-list-item" key={skill.id}>
                     <span className="admin-colour-dot" style={{ background: skill.color }} aria-hidden="true" />
                     <span><strong>{skill.name}</strong><small>{skill.group} · {skill.level}%</small></span>
                     <span className="admin-item-actions">
                       <button type="button" onClick={() => startEditSkill(skill)} aria-label={`Edit ${skill.name}`}><FaPen aria-hidden="true" /></button>
-                      <button type="button" onClick={() => { content.deleteCustomSkill(skill.id); notify(`${skill.name} deleted.`); }} aria-label={`Delete ${skill.name}`}><FaTrashCan aria-hidden="true" /></button>
+                      <button type="button" onClick={() => handleDeleteSkill(skill)} disabled={saving} aria-label={`Delete ${skill.name}`}><FaTrashCan aria-hidden="true" /></button>
                     </span>
                   </article>
                 ))}
-                <p className="admin-hint">Built-in published skills are edited in <code>src/data/portfolio.js</code>; admin additions are a local overlay.</p>
+                <p className="admin-hint">Every skill is now a real Supabase record. Deleting here removes it for every visitor.</p>
               </aside>
             </div>
           )}
@@ -597,7 +779,7 @@ export default function Admin() {
           {activeTab === 'projects' && (
             <div className="admin-grid projects-admin-grid">
               <form className="form admin-form" onSubmit={handleProjectSubmit}>
-                <h2>{editingProjectId ? 'Edit custom project' : 'Add a project'}</h2>
+                <h2>{editingProjectId ? 'Edit project' : 'Add a project'}</h2>
                 <Field id="project-title" label="Project title *">
                   <input id="project-title" value={projectForm.title} onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })} placeholder="e.g. Stock Management App — Symfony" required />
                 </Field>
@@ -636,10 +818,19 @@ export default function Admin() {
                     <input id="project-tags" value={projectForm.tagsText} onChange={(e) => setProjectForm({ ...projectForm, tagsText: e.target.value })} placeholder="ERP, Dashboard, Business" />
                   </Field>
                 </div>
-                <Field id="project-cover" label="Cover image URL" hint="Paste an image URL, or upload below. Empty = an automatic branded cover.">
-                  <input id="project-cover" value={projectForm.cover} onChange={(e) => setProjectForm({ ...projectForm, cover: e.target.value })} placeholder="https://…" />
+                <Field id="project-cover" label="Cover image URL" hint="Paste an image URL, or upload below to Supabase Storage. Empty = automatic branded cover or the built-in project image.">
+                  <input
+                    id="project-cover"
+                    value={projectForm.cover}
+                    onChange={(e) => { setProjectCoverFile(null); setProjectForm({ ...projectForm, cover: e.target.value }); }}
+                    placeholder="https://…"
+                  />
                 </Field>
-                <Field id="project-cover-file" label="…or upload a cover (max 1.5 MB)">
+                <Field
+                  id="project-cover-file"
+                  label="…or upload a cover to Supabase Storage (max 5 MB)"
+                  hint={projectCoverFile ? `Selected: ${projectCoverFile.name} — it will upload when you save.` : undefined}
+                >
                   <input id="project-cover-file" type="file" accept="image/*" onChange={(e) => readProjectImage(e.target.files?.[0])} />
                 </Field>
                 {projectForm.cover && <img className="admin-cover-preview" src={projectForm.cover} alt="Project cover preview" />}
@@ -658,49 +849,56 @@ export default function Admin() {
                   <input type="checkbox" checked={projectForm.featured} onChange={(e) => setProjectForm({ ...projectForm, featured: e.target.checked })} />
                   Mark as featured
                 </label>
+                <label className="admin-checkbox">
+                  <input type="checkbox" checked={projectForm.published} onChange={(e) => setProjectForm({ ...projectForm, published: e.target.checked })} />
+                  Published (visible to visitors)
+                </label>
                 <div className="admin-actions-row">
-                  <button type="submit" className="btn btn-primary"><FaFloppyDisk aria-hidden="true" /> {editingProjectId ? 'Save project' : 'Add project'}</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}><FaFloppyDisk aria-hidden="true" /> {saving ? 'Saving…' : editingProjectId ? 'Save project' : 'Add project'}</button>
                   {editingProjectId && (
-                    <button type="button" className="btn btn-ghost" onClick={() => { setEditingProjectId(''); setProjectForm(emptyProjectForm()); }}>Cancel edit</button>
+                    <button type="button" className="btn btn-ghost" onClick={() => { setEditingProjectId(''); setProjectForm(emptyProjectForm()); setProjectCoverFile(null); }}>Cancel edit</button>
                   )}
                 </div>
               </form>
 
               <aside className="admin-side-list">
-                <h2>Displayed projects ({projects.length})</h2>
-                {projects.map((project) => (
-                  <article className="admin-list-item project" key={project.slug}>
+                <h2>Supabase projects ({allProjects.length})</h2>
+                {allProjects.length === 0 ? (
+                  <p className="empty-state">No projects in Supabase yet. Seed the published defaults from Backup / Data.</p>
+                ) : allProjects.map((project) => (
+                  <article className="admin-list-item project" key={project.id || project.slug}>
                     <img src={project.cover} alt="" loading="lazy" />
-                    <span><strong>{project.title}</strong><small>{project.category} · {project.year} · {project.custom ? 'Added in Admin' : 'Built-in'}</small></span>
+                    <span>
+                      <strong>{project.title}</strong>
+                      <small>{project.category} · {project.year} · {project.published ? 'Published' : 'Draft'}{project.featured ? ' · Featured' : ''}</small>
+                    </span>
                     <span className="admin-item-actions">
-                      <Link to={`/projects/${project.slug}`} aria-label={`View ${project.title}`}><FaEye aria-hidden="true" /></Link>
-                      {project.custom && (
-                        <button type="button" onClick={() => startEditProject(project)} aria-label={`Edit ${project.title}`}><FaPen aria-hidden="true" /></button>
+                      {project.published && (
+                        <Link to={`/projects/${project.slug}`} aria-label={`View ${project.title}`}><FaEye aria-hidden="true" /></Link>
                       )}
+                      <button type="button" onClick={() => startEditProject(project)} aria-label={`Edit ${project.title}`}><FaPen aria-hidden="true" /></button>
                       <button
                         type="button"
-                        onClick={() => { content.deleteProject(project); notify(project.custom ? `${project.title} deleted.` : `${project.title} hidden in this browser.`); }}
-                        aria-label={`${project.custom ? 'Delete' : 'Hide'} ${project.title}`}
-                        title={project.custom ? 'Delete custom project' : 'Hide built-in project locally'}
+                        onClick={() => handleToggleProjectPublished(project)}
+                        disabled={saving}
+                        aria-label={`${project.published ? 'Unpublish' : 'Publish'} ${project.title}`}
+                        title={project.published ? 'Move to draft' : 'Publish project'}
+                      >
+                        {project.published ? <FaEyeSlash aria-hidden="true" /> : <FaEye aria-hidden="true" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProject(project)}
+                        disabled={saving}
+                        aria-label={`Delete ${project.title}`}
+                        title="Delete project from Supabase"
                       >
                         <FaTrashCan aria-hidden="true" />
                       </button>
                     </span>
                   </article>
                 ))}
-                {hiddenDefaultProjects.length > 0 && (
-                  <>
-                    <h3>Hidden built-in projects</h3>
-                    {hiddenDefaultProjects.map((project) => (
-                      <article className="admin-list-item" key={project.slug}>
-                        <span><strong>{project.title}</strong><small>Hidden locally</small></span>
-                        <button type="button" className="text-link" onClick={() => { content.restoreProject(project.slug); notify(`${project.title} restored.`); }}>
-                          <FaRotateLeft aria-hidden="true" /> Restore
-                        </button>
-                      </article>
-                    ))}
-                  </>
-                )}
+                <p className="admin-hint">Drafts are visible only to your signed-in admin account through RLS. Published projects appear to all visitors.</p>
               </aside>
             </div>
           )}
@@ -758,22 +956,91 @@ export default function Admin() {
               ))}
 
               <div className="admin-actions-row sticky-actions">
-                <button type="submit" className="btn btn-primary"><FaFloppyDisk aria-hidden="true" /> Save experience</button>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => {
-                    content.resetExperience();
-                    setDraftExperience(toExperienceDraft(defaultExperience));
-                    setExperienceDirty(false);
-                    notify('Work experience reset to the published defaults.');
-                  }}
-                >
+                <button type="submit" className="btn btn-primary" disabled={saving}><FaFloppyDisk aria-hidden="true" /> {saving ? 'Saving…' : 'Save experience'}</button>
+                <button type="button" className="btn btn-ghost" onClick={handleResetExperience} disabled={saving}>
                   <FaRotateLeft aria-hidden="true" /> Reset to defaults
                 </button>
                 {experienceDirty && <span className="admin-dirty">Unsaved changes</span>}
               </div>
             </form>
+          )}
+
+          {activeTab === 'messages' && (
+            <div className="admin-panel">
+              <div className="admin-info-card">
+                <div className="admin-form-head">
+                  <div>
+                    <h2><FaInbox aria-hidden="true" /> Contact messages</h2>
+                    <p>Messages saved by the public Contact form in Supabase. EmailJS still sends an email copy when available.</p>
+                  </div>
+                  <span className={`admin-status-pill${unreadMessages ? ' is-custom' : ''}`}>{unreadMessages} new</span>
+                </div>
+                <div className="admin-actions-row">
+                  <label className="admin-inline-filter">
+                    Status
+                    <select value={messageStatusFilter} onChange={(e) => setMessageStatusFilter(e.target.value)} aria-label="Filter contact messages by status">
+                      <option value="all">All statuses</option>
+                      {MESSAGE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </label>
+                  <button type="button" className="btn btn-ghost" onClick={fetchContactMessages} disabled={messagesLoading}>
+                    <FaRotateLeft aria-hidden="true" /> {messagesLoading ? 'Refreshing…' : 'Refresh'}
+                  </button>
+                  <Link className="btn btn-ghost" to="/contact"><FaEye aria-hidden="true" /> Open Contact form</Link>
+                </div>
+                {messagesError && (
+                  <p className="form-status error" role="alert"><FaTriangleExclamation aria-hidden="true" /> {messagesError}</p>
+                )}
+              </div>
+
+              {messagesLoading && contactMessages.length === 0 ? (
+                <p className="empty-state">Loading contact messages from Supabase…</p>
+              ) : visibleContactMessages.length === 0 ? (
+                <p className="empty-state">No contact messages match this filter yet.</p>
+              ) : (
+                <div className="admin-message-list">
+                  {visibleContactMessages.map((message) => (
+                    <article className="admin-message-card" key={message.id}>
+                      <div className="admin-message-head">
+                        <div>
+                          <h3>{message.name}</h3>
+                          <p>
+                            <a href={`mailto:${message.email}`}>{message.email}</a>
+                            <span aria-hidden="true"> · </span>
+                            <time dateTime={message.created_at}>{new Date(message.created_at).toLocaleString()}</time>
+                          </p>
+                        </div>
+                        <span className={`admin-status-pill${message.status === 'new' ? ' is-custom' : ''}`}>{message.status}</span>
+                      </div>
+                      {message.subject && <p className="admin-message-subject"><strong>Subject:</strong> {message.subject}</p>}
+                      <p className="admin-message-body">{message.message}</p>
+                      <div className="admin-actions-row">
+                        <a
+                          className="btn btn-primary btn-sm"
+                          href={`mailto:${message.email}?subject=${encodeURIComponent(`Re: ${message.subject || 'Your message to Hamza'}`)}&body=${encodeURIComponent(`Hello ${message.name},\n\nThanks for your message.\n\n---\n${message.message}`)}`}
+                        >
+                          <FaEnvelopeOpen aria-hidden="true" /> Reply by email
+                        </a>
+                        <label className="admin-inline-filter">
+                          Status
+                          <select
+                            value={message.status}
+                            onChange={(e) => handleMessageStatus(message, e.target.value)}
+                            disabled={saving}
+                            aria-label={`Status for message from ${message.name}`}
+                          >
+                            {MESSAGE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                          </select>
+                        </label>
+                        <button type="button" className="btn btn-danger-ghost btn-sm" onClick={() => handleDeleteMessage(message)} disabled={saving}>
+                          <FaTrashCan aria-hidden="true" /> Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {activeTab === 'email' && (
@@ -782,10 +1049,10 @@ export default function Admin() {
                 <div className="admin-form-head">
                   <div>
                     <h2><FaEnvelope aria-hidden="true" /> EmailJS configuration</h2>
-                    <p>These are the values the Contact form uses. Published defaults are prefilled; saving here overrides them in this browser.</p>
+                    <p>These public EmailJS values are stored in Supabase <code>site_settings</code> and used by every visitor’s Contact form.</p>
                   </div>
-                  <span className={`admin-status-pill${hasCustomEmailConfig ? ' is-custom' : ''}`}>
-                    {hasCustomEmailConfig ? 'Admin override' : 'Published defaults'}
+                  <span className={`admin-status-pill${isDatabaseConnected ? ' is-custom' : ''}`}>
+                    {isDatabaseConnected ? 'Supabase live' : 'Fallback defaults'}
                   </span>
                 </div>
 
@@ -834,15 +1101,16 @@ export default function Admin() {
                 </div>
 
                 <div className="admin-actions-row">
-                  <button type="submit" className="btn btn-primary"><FaFloppyDisk aria-hidden="true" /> Save email settings</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}><FaFloppyDisk aria-hidden="true" /> {saving ? 'Saving…' : 'Save email settings'}</button>
                   <button type="button" className="btn btn-ghost" onClick={sendTestEmail} disabled={emailTestBusy}>
                     <FaPaperPlane aria-hidden="true" /> {emailTestBusy ? 'Sending…' : 'Send test email'}
                   </button>
                   <button
                     type="button"
                     className="btn btn-ghost"
+                    disabled={saving}
                     onClick={() => {
-                      if (!window.confirm('Reset EmailJS settings to the published defaults?')) return;
+                      if (!window.confirm('Reset the Supabase EmailJS settings to the published defaults for every visitor?')) return;
                       resetEmailConfig();
                     }}
                   >
@@ -858,7 +1126,7 @@ export default function Admin() {
               <aside className="admin-side-list admin-email-summary" aria-label="Current EmailJS configuration">
                 <div className="admin-list-head">
                   <h3>Currently used</h3>
-                  <span>{hasCustomEmailConfig ? 'Admin' : 'Code'}</span>
+                  <span>{isDatabaseConnected ? 'Supabase' : contentSource}</span>
                 </div>
                 <dl className="admin-email-values">
                   <div>
@@ -882,9 +1150,8 @@ export default function Admin() {
                 <div className="admin-note">
                   <FaTriangleExclamation aria-hidden="true" />
                   <p>
-                    This is a static GitHub Pages site, so Admin saves are browser-local. They take effect for the Contact form
-                    in this browser and are included in JSON backups, but publishing new defaults for every visitor still requires
-                    updating the site code/environment and redeploying.
+                    Saving updates Supabase for every visitor. These are front-end public values only; the destination
+                    inbox is still controlled by your EmailJS template, and a private/secret key must never be entered here.
                   </p>
                 </div>
 
@@ -899,42 +1166,83 @@ export default function Admin() {
           {activeTab === 'data' && (
             <div className="admin-panel admin-data-grid">
               <article className="admin-info-card">
+                <h2><FaDatabase aria-hidden="true" /> Supabase status</h2>
+                <p>
+                  Source: <strong>{isDatabaseConnected ? 'Supabase Postgres (live)' : 'Published/legacy fallback'}</strong>
+                  {SUPABASE_PROJECT_REF ? <> · Project <code>{SUPABASE_PROJECT_REF}</code></> : null}
+                  {contentLoading ? ' · Loading…' : ''}. Skills, projects, experience, EmailJS settings and contact messages are database-backed.
+                </p>
+                <div className="admin-actions-row">
+                  <button type="button" className="btn btn-primary" onClick={() => content.refreshContent()} disabled={contentLoading}>
+                    <FaRotateLeft aria-hidden="true" /> Refresh from Supabase
+                  </button>
+                  {SUPABASE_PROJECT_REF && (
+                    <a
+                      className="btn btn-ghost"
+                      href={`https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/editor`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open Table Editor
+                    </a>
+                  )}
+                </div>
+              </article>
+
+              <article className="admin-info-card">
                 <h2><FaDownload aria-hidden="true" /> Export backup</h2>
-                <p>Download every local admin change (custom skills/projects, hidden projects, work experience and EmailJS settings) as JSON. Keep it as a backup or send it to a developer to publish permanently in code.</p>
+                <p>Download the current Supabase skills, projects, work experience and EmailJS settings as a version-2 JSON backup. Contact messages stay private in the Messages inbox and are not included.</p>
                 <button type="button" className="btn btn-primary" onClick={exportData}><FaDownload aria-hidden="true" /> Download JSON</button>
               </article>
+
               <article className="admin-info-card">
                 <h2><FaUpload aria-hidden="true" /> Import backup</h2>
-                <p>Restore a previously exported JSON file on this or another browser. Importing replaces the current local overlay.</p>
+                <p>Restore a version-2 Supabase backup or an older local-overlay backup. Importing replaces live Supabase content for every visitor, so export first.</p>
                 <input ref={importInputRef} className="sr-only" type="file" accept="application/json,.json" onChange={(e) => importData(e.target.files?.[0])} aria-label="Import portfolio JSON backup" />
-                <button type="button" className="btn btn-ghost" onClick={() => importInputRef.current?.click()}><FaUpload aria-hidden="true" /> Choose JSON file</button>
+                <button type="button" className="btn btn-ghost" onClick={() => importInputRef.current?.click()} disabled={saving}><FaUpload aria-hidden="true" /> Choose JSON file</button>
               </article>
+
+              <article className="admin-info-card">
+                <h2><FaDatabase aria-hidden="true" /> Migrate old local data</h2>
+                <p>
+                  {hasLegacyLocalContent
+                    ? 'This browser still has old local Admin changes. Copy the merged local version into Supabase once, check the public site, then clear the local copy.'
+                    : 'No old local Admin content was found in this browser. New changes already save directly to Supabase.'}
+                </p>
+                <div className="admin-actions-row">
+                  <button type="button" className="btn btn-primary" onClick={() => handleMigrateLocalContent(false)} disabled={!hasLegacyLocalContent || saving}>
+                    <FaUpload aria-hidden="true" /> Import local data
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={() => handleMigrateLocalContent(true)} disabled={!hasLegacyLocalContent || saving}>
+                    Import & clear local
+                  </button>
+                  <button type="button" className="btn btn-danger-ghost" onClick={handleClearLocalLegacy} disabled={!hasLegacyLocalContent || saving}>
+                    Clear local only
+                  </button>
+                </div>
+              </article>
+
               <article className="admin-info-card danger">
-                <h2><FaRotateLeft aria-hidden="true" /> Reset local content</h2>
-                <p>Remove all admin additions/changes from this browser and return to the portfolio exactly as published in code.</p>
-                <button
-                  type="button"
-                  className="btn btn-danger-ghost"
-                  onClick={() => {
-                    if (!window.confirm('Reset all local admin content in this browser? Export a backup first if needed.')) return;
-                    content.resetContent();
-                    setDraftExperience(toExperienceDraft(defaultExperience));
-                    setExperienceDirty(false);
-                    setEmailForm({ ...defaultEmailConfig });
-                    setEmailDirty(false);
-                    notify('Local portfolio content reset to published defaults.');
-                  }}
-                >
-                  <FaRotateLeft aria-hidden="true" /> Reset everything local
+                <h2><FaRotateLeft aria-hidden="true" /> {isDatabaseConnected ? 'Reset database defaults' : 'Seed database defaults'}</h2>
+                <p>
+                  {isDatabaseConnected
+                    ? 'Replace all live Supabase skills, projects, experience and EmailJS settings with the defaults currently published in code.'
+                    : 'Populate empty Supabase tables with the currently published skills, projects, experience and EmailJS settings from code.'}
+                </p>
+                <button type="button" className="btn btn-danger-ghost" onClick={handleSeedDefaults} disabled={saving}>
+                  <FaRotateLeft aria-hidden="true" /> {isDatabaseConnected ? 'Reset Supabase content' : 'Seed Supabase defaults'}
                 </button>
               </article>
+
               <article className="admin-info-card">
-                <h2><FaLock aria-hidden="true" /> Security reality check</h2>
+                <h2><FaLock aria-hidden="true" /> Security model</h2>
                 <p>
-                  The password only locks this editing screen on this device. A public, multi-device admin with a real database
-                  requires a backend/CMS and proper authentication; never put private API keys in this front-end code.
+                  Supabase Auth identifies the owner; Postgres Row Level Security allows public reads and contact-message inserts,
+                  but only {ADMIN_EMAIL} can write content or read the inbox. The browser uses the publishable key only—never add a secret/service-role key to this site.
                 </p>
-                <button type="button" className="btn btn-ghost" onClick={lockAdmin}><FaLock aria-hidden="true" /> Lock admin now</button>
+                <button type="button" className="btn btn-ghost" onClick={signOutAdmin} disabled={authBusy}>
+                  <FaRightFromBracket aria-hidden="true" /> Sign out now
+                </button>
               </article>
             </div>
           )}

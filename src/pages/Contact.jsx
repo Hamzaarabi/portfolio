@@ -26,7 +26,7 @@ const TOPIC_VALUES = [
 
 export default function Contact() {
   const { t } = useLanguage();
-  const { emailConfig } = usePortfolioContent();
+  const { emailConfig, submitContactMessage } = usePortfolioContent();
   const profile = useLocalizedProfile();
   useTitle(t('pages.contact.title'));
   const topicLabels = t('pages.contact.topics');
@@ -55,21 +55,39 @@ export default function Contact() {
     if (form.company) return; // honeypot: bots fill hidden fields
     if (!validate()) return;
     setStatus('sending');
-    try {
-      await emailjs.send(
+
+    const submission = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      subject: form.subject.trim() || t('pages.contact.defaultSubject'),
+      message: form.message.trim(),
+    };
+
+    // Save to the Supabase inbox and send through EmailJS in parallel. The
+    // visitor sees success when either delivery path confirms receipt, so a
+    // temporary EmailJS or database outage does not lose the enquiry.
+    const [databaseResult, emailResult] = await Promise.allSettled([
+      submitContactMessage(submission),
+      emailjs.send(
         emailConfig.serviceId,
         emailConfig.templateId,
         {
-          user_name: form.name.trim(),
-          user_email: form.email.trim(),
-          subject: form.subject.trim() || t('pages.contact.defaultSubject'),
-          message: form.message.trim(),
+          user_name: submission.name,
+          user_email: submission.email,
+          subject: submission.subject,
+          message: submission.message,
         },
         emailConfig.publicKey
-      );
+      ),
+    ]);
+
+    const savedToDatabase = databaseResult.status === 'fulfilled' && databaseResult.value === true;
+    const sentByEmail = emailResult.status === 'fulfilled';
+
+    if (savedToDatabase || sentByEmail) {
       setStatus('success');
       setForm({ name: '', email: '', subject: '', message: '', company: '' });
-    } catch {
+    } else {
       setStatus('error');
     }
   };
