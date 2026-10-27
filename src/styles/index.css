@@ -710,7 +710,7 @@ kbd {
 .work-card-link { margin-top: 1.2rem; }
 @media (max-width: 600px) {
   .whatsapp-float span { display: none; }
-  .whatsapp-float { padding: 0.85rem; border-radius: 50%; }
+  .whatsapp-float { left: 16px; padding: 0.85rem; border-radius: 50%; }
 }
 .page-fallback { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
 .spinner {
@@ -730,7 +730,7 @@ kbd {
 
 /* ── Chatbot ─────────────────────────────────────────────── */
 .chatbot-toggle {
-  position: fixed; right: 22px; bottom: 84px; z-index: 210;
+  position: fixed; left: 22px; bottom: 86px; z-index: 210;
   display: inline-flex; align-items: center; gap: 0.55rem;
   min-height: 52px; padding: 0.8rem 1.05rem; border-radius: 999px;
   background: var(--grad); color: #03130c; font-weight: 700;
@@ -740,9 +740,9 @@ kbd {
 .chatbot-toggle svg { font-size: 1.35rem; }
 .chatbot-toggle:hover { transform: translateY(-3px); box-shadow: 0 20px 42px -12px var(--glow); }
 .chatbot-panel {
-  position: fixed; right: 22px; bottom: 148px; z-index: 205;
+  position: fixed; left: 22px; bottom: 150px; z-index: 205;
   width: min(408px, calc(100vw - 32px));
-  height: min(650px, calc(100dvh - 172px)); min-height: 480px;
+  height: min(650px, calc(100dvh - 174px)); min-height: 480px;
   display: flex; flex-direction: column; overflow: hidden;
   border: 1px solid var(--border-strong); border-radius: 24px;
   background: var(--surface-strong); box-shadow: 0 34px 80px -24px rgba(0,0,0,0.65);
@@ -910,8 +910,8 @@ kbd {
   .admin-toolbar { align-items: stretch; }
   .admin-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.2rem; }
   .admin-tab { flex: none; }
-  .chatbot-toggle { right: 16px; bottom: 84px; }
-  .chatbot-panel { right: 12px; left: 12px; bottom: 148px; width: auto; height: min(620px, calc(100dvh - 162px)); min-height: 440px; }
+  .chatbot-toggle { left: 16px; bottom: 86px; }
+  .chatbot-panel { right: 12px; left: 12px; bottom: 150px; width: auto; height: min(620px, calc(100dvh - 174px)); min-height: 440px; }
 }
 
 /* ── Responsive ──────────────────────────────────────────── */

@@ -122,9 +122,8 @@ export default function ChatBot() {
     if (includesAny(query, ['admin', 'ajouter', 'modifier le contenu', 'gerer', 'dashboard', 'edit content', 'add a skill', 'add skill', 'add a project', 'add project', 'change experience', 'modifier experience'])) {
       return {
         text: french
-          ? "Hamza peut gérer le contenu depuis la partie Admin : ajouter des compétences et des projets, et modifier l'expérience professionnelle. Les changements sont enregistrés dans ce navigateur (site statique, sans base de données serveur), avec export/import JSON pour les sauvegarder."
-          : 'Hamza can manage content from the Admin area: add skills and projects, and edit work experience. Changes are saved in this browser (this is a static site with no server database), with JSON export/import for backup.',
-        links: [{ label: french ? "Ouvrir l'administration" : 'Open Admin', to: '/admin' }],
+          ? "L'administration du portfolio est privée : elle n'est liée depuis aucune page publique et seul le propriétaire peut y accéder avec son adresse directe et son mot de passe local."
+          : 'Portfolio administration is private: it is not linked from any public page, and only the owner can access it with the direct dashboard URL and local password.',
       };
     }
 

@@ -59,7 +59,7 @@ Edit it and every page updates automatically. Drop new project screenshots
 
 ### Admin area (`/#/admin`)
 
-Open **Admin** from the footer or `/#/admin`, create a local password on first use, then:
+Open `/#/admin` directly by URL (it is intentionally not linked from the public navigation or footer), create a local password on first use, then:
 
 - add/edit custom **skills** (group, level, colour and icon style)
 - add/edit custom **projects** (details, stack, features, cover URL/upload and links)
