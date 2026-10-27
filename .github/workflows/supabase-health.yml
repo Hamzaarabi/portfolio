@@ -1,0 +1,82 @@
+name: Supabase health check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Query public Supabase tables
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+
+          SUPABASE_URL="${VITE_SUPABASE_URL:-$(grep -oE "https://[a-z0-9]+\.supabase\.co" src/lib/supabase.js | head -1)}"
+          SUPABASE_KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-$(grep -oE "sb_publishable_[A-Za-z0-9_-]+" src/lib/supabase.js | head -1)}"
+          SUPABASE_URL="${SUPABASE_URL%/}"
+          SUPABASE_URL="${SUPABASE_URL%/rest/v1}"
+
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "Supabase public configuration is missing." >&2
+            exit 1
+          fi
+
+          api_get() {
+            curl --fail-with-body -sS \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Accept: application/json" \
+              "$SUPABASE_URL/rest/v1/$1"
+          }
+
+          groups_json="$(api_get 'portfolio_skill_groups?select=id,title&order=sort_order.asc')"
+          skills_json="$(api_get 'portfolio_skills?select=id,name&order=sort_order.asc')"
+          projects_json="$(api_get 'portfolio_projects?select=id,slug,title,published&order=sort_order.asc')"
+          experience_json="$(api_get 'portfolio_experience?select=id,title,org&order=sort_order.asc')"
+          settings_json="$(api_get 'site_settings?select=emailjs_service_id,emailjs_template_id&id=eq.1')"
+
+          groups_count="$(jq 'length' <<<"$groups_json")"
+          skills_count="$(jq 'length' <<<"$skills_json")"
+          projects_count="$(jq 'length' <<<"$projects_json")"
+          experience_count="$(jq 'length' <<<"$experience_json")"
+          service_id="$(jq -r '.[0].emailjs_service_id // empty' <<<"$settings_json")"
+          template_id="$(jq -r '.[0].emailjs_template_id // empty' <<<"$settings_json")"
+
+          {
+            echo "## Supabase health check"
+            echo
+            echo "- Project: $SUPABASE_URL"
+            echo "- Skill groups: $groups_count"
+            echo "- Skills: $skills_count"
+            echo "- Published projects visible to anon: $projects_count"
+            echo "- Experience rows: $experience_count"
+            echo "- EmailJS service ID: $service_id"
+            echo "- EmailJS template ID: $template_id"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          cat "$GITHUB_STEP_SUMMARY"
+
+          test "$groups_count" -ge 1
+          test "$skills_count" -ge 1
+          test "$projects_count" -ge 1
+          test "$experience_count" -ge 1
+          test -n "$service_id"
+          test -n "$template_id"
+
+          inbox_status="$(curl -sS -o /tmp/contact-messages-response.json -w '%{http_code}' \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Accept: application/json" \
+            "$SUPABASE_URL/rest/v1/contact_messages?select=id&limit=1")"
+          echo "Anonymous contact inbox read HTTP status: $inbox_status"
+          if [ "$inbox_status" -lt 400 ]; then
+            inbox_rows="$(jq 'if type == "array" then length else 0 end' /tmp/contact-messages-response.json)"
+            test "$inbox_rows" -eq 0
+          fi
