@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 import {
-  FaBriefcase, FaCheck, FaCode, FaDownload, FaEye, FaFloppyDisk, FaFolderOpen,
-  FaGears, FaLock, FaPen, FaPlus, FaRotateLeft, FaTrashCan, FaTriangleExclamation, FaUpload,
+  FaBriefcase, FaCheck, FaCode, FaDownload, FaEnvelope, FaEye, FaFloppyDisk, FaFolderOpen,
+  FaGears, FaLock, FaPaperPlane, FaPen, FaPlus, FaRotateLeft, FaTrashCan, FaTriangleExclamation, FaUpload,
 } from 'react-icons/fa6';
 import useTitle from '../hooks/useTitle';
 import PageHero from '../components/PageHero';
+import { profile } from '../data/portfolio';
 import { SKILL_ICON_OPTIONS, usePortfolioContent } from '../content/PortfolioContentContext';
 
 const ADMIN_HASH_KEY = 'hamza-portfolio-admin-hash-v1';
@@ -61,6 +63,7 @@ export default function Admin() {
   const {
     skillGroups, projects, experience, defaultExperience, defaultProjects,
     customSkills, customProjects, deletedProjectSlugs, storageError, isCustomized,
+    emailConfig, defaultEmailConfig, hasCustomEmailConfig,
   } = content;
 
   const [authState, setAuthState] = useState(initialAuthState);
@@ -88,6 +91,10 @@ export default function Admin() {
   const [draftExperience, setDraftExperience] = useState(() => toExperienceDraft(experience));
   const [experienceDirty, setExperienceDirty] = useState(false);
 
+  const [emailForm, setEmailForm] = useState(() => ({ ...emailConfig }));
+  const [emailDirty, setEmailDirty] = useState(false);
+  const [emailTestBusy, setEmailTestBusy] = useState(false);
+
   useEffect(() => {
     if (!notice) return undefined;
     const timer = window.setTimeout(() => setNotice(''), 4500);
@@ -97,6 +104,10 @@ export default function Admin() {
   useEffect(() => {
     if (!experienceDirty) setDraftExperience(toExperienceDraft(experience));
   }, [experience, experienceDirty]);
+
+  useEffect(() => {
+    if (!emailDirty) setEmailForm({ ...emailConfig });
+  }, [emailConfig, emailDirty]);
 
   const notify = (message) => setNotice(message);
   const totalSkills = skillGroups.reduce((sum, group) => sum + group.skills.length, 0);
@@ -293,6 +304,75 @@ export default function Admin() {
     notify('Work experience updated on the Home and About pages.');
   };
 
+  const updateEmailForm = (field, value) => {
+    setEmailDirty(true);
+    setEmailForm((form) => ({ ...form, [field]: value }));
+  };
+
+  const cleanedEmailForm = () => ({
+    serviceId: emailForm.serviceId.trim(),
+    templateId: emailForm.templateId.trim(),
+    publicKey: emailForm.publicKey.trim(),
+  });
+
+  const validateEmailForm = (config) => {
+    if (!config.serviceId || !config.templateId || !config.publicKey) {
+      notify('Please fill in the EmailJS Service ID, Template ID and Public Key.');
+      return false;
+    }
+    if (/\s/.test(config.serviceId) || /\s/.test(config.templateId) || /\s/.test(config.publicKey)) {
+      notify('EmailJS IDs and the Public Key cannot contain spaces.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleEmailConfigSave = (event) => {
+    event.preventDefault();
+    const config = cleanedEmailForm();
+    if (!validateEmailForm(config)) return;
+    content.saveEmailConfig(config);
+    setEmailForm(config);
+    setEmailDirty(false);
+    notify('EmailJS configuration saved in this browser. The Contact form now uses it here.');
+  };
+
+  const resetEmailConfig = () => {
+    content.resetEmailConfig();
+    setEmailForm({ ...defaultEmailConfig });
+    setEmailDirty(false);
+    notify('EmailJS configuration reset to the published defaults.');
+  };
+
+  const discardEmailChanges = () => {
+    setEmailForm({ ...emailConfig });
+    setEmailDirty(false);
+  };
+
+  const sendTestEmail = async () => {
+    const config = cleanedEmailForm();
+    if (!validateEmailForm(config) || emailTestBusy) return;
+    setEmailTestBusy(true);
+    try {
+      await emailjs.send(
+        config.serviceId,
+        config.templateId,
+        {
+          user_name: 'Portfolio Admin',
+          user_email: profile.email,
+          subject: 'EmailJS test from portfolio admin',
+          message: `This is a test message from the portfolio Admin EmailJS settings.\n\nService ID: ${config.serviceId}\nTemplate ID: ${config.templateId}\nSent: ${new Date().toLocaleString()}`,
+        },
+        config.publicKey
+      );
+      notify('Test email sent. Check the inbox configured in your EmailJS template.');
+    } catch {
+      notify('Test email failed. Check the Service ID, Template ID, Public Key and EmailJS template settings.');
+    } finally {
+      setEmailTestBusy(false);
+    }
+  };
+
   const exportData = () => {
     const blob = new Blob([content.exportContent()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -311,6 +391,7 @@ export default function Admin() {
     try {
       content.importContent(await file.text());
       setExperienceDirty(false);
+      setEmailDirty(false);
       notify('Portfolio content imported successfully.');
     } catch {
       notify('Import failed. Please choose a valid portfolio-content-backup.json file.');
@@ -326,7 +407,7 @@ export default function Admin() {
         <PageHero
           eyebrow="Private area"
           title="Portfolio administration"
-          sub="Manage skills, projects and work experience from this browser. A local password protects the editor on this device."
+          sub="Manage skills, projects, work experience and EmailJS settings from this browser. A local password protects the editor on this device."
         />
         <section className="section admin-auth-section">
           <div className="container-x narrow">
@@ -386,6 +467,7 @@ export default function Admin() {
     { id: 'skills', label: 'Skills', icon: FaCode },
     { id: 'projects', label: 'Projects', icon: FaFolderOpen },
     { id: 'experience', label: 'Experience', icon: FaBriefcase },
+    { id: 'email', label: 'EmailJS', icon: FaEnvelope },
     { id: 'data', label: 'Backup / Data', icon: FaFloppyDisk },
   ];
 
@@ -394,7 +476,7 @@ export default function Admin() {
       <PageHero
         eyebrow="Administration"
         title="Manage your portfolio"
-        sub="Add skills and projects, edit work experience, then preview the public site. Changes save automatically in this browser."
+        sub="Add skills and projects, edit work experience, configure EmailJS, then preview the public site. Changes save automatically in this browser."
       />
 
       <section className="section admin-section">
@@ -445,6 +527,7 @@ export default function Admin() {
                 <div className="admin-actions-row">
                   <button type="button" className="btn btn-primary" onClick={() => setActiveTab('skills')}><FaPlus aria-hidden="true" /> Add a skill</button>
                   <button type="button" className="btn btn-ghost" onClick={() => setActiveTab('projects')}><FaPlus aria-hidden="true" /> Add a project</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setActiveTab('email')}><FaEnvelope aria-hidden="true" /> Email settings</button>
                   <button type="button" className="btn btn-ghost" onClick={exportData}><FaDownload aria-hidden="true" /> Export backup</button>
                 </div>
               </div>
@@ -693,11 +776,131 @@ export default function Admin() {
             </form>
           )}
 
+          {activeTab === 'email' && (
+            <div className="admin-grid">
+              <form className="form admin-form" onSubmit={handleEmailConfigSave}>
+                <div className="admin-form-head">
+                  <div>
+                    <h2><FaEnvelope aria-hidden="true" /> EmailJS configuration</h2>
+                    <p>These are the values the Contact form uses. Published defaults are prefilled; saving here overrides them in this browser.</p>
+                  </div>
+                  <span className={`admin-status-pill${hasCustomEmailConfig ? ' is-custom' : ''}`}>
+                    {hasCustomEmailConfig ? 'Admin override' : 'Published defaults'}
+                  </span>
+                </div>
+
+                <Field id="emailjs-service-id" label="Service ID *">
+                  <input
+                    id="emailjs-service-id"
+                    type="text"
+                    value={emailForm.serviceId}
+                    onChange={(e) => updateEmailForm('serviceId', e.target.value)}
+                    placeholder="service_xxxxxxxxx"
+                    autoComplete="off"
+                    spellCheck="false"
+                    required
+                  />
+                </Field>
+
+                <Field id="emailjs-template-id" label="Template ID *">
+                  <input
+                    id="emailjs-template-id"
+                    type="text"
+                    value={emailForm.templateId}
+                    onChange={(e) => updateEmailForm('templateId', e.target.value)}
+                    placeholder="template_xxxxxxxxx"
+                    autoComplete="off"
+                    spellCheck="false"
+                    required
+                  />
+                </Field>
+
+                <Field id="emailjs-public-key" label="Public Key *">
+                  <input
+                    id="emailjs-public-key"
+                    type="text"
+                    value={emailForm.publicKey}
+                    onChange={(e) => updateEmailForm('publicKey', e.target.value)}
+                    placeholder="EmailJS account Public Key"
+                    autoComplete="off"
+                    spellCheck="false"
+                    required
+                  />
+                </Field>
+
+                <div className="admin-hint">
+                  Find the Service ID under Email Services, the Template ID under Email Templates, and the Public Key under
+                  Account → General in your EmailJS dashboard. Never paste a private key here.
+                </div>
+
+                <div className="admin-actions-row">
+                  <button type="submit" className="btn btn-primary"><FaFloppyDisk aria-hidden="true" /> Save email settings</button>
+                  <button type="button" className="btn btn-ghost" onClick={sendTestEmail} disabled={emailTestBusy}>
+                    <FaPaperPlane aria-hidden="true" /> {emailTestBusy ? 'Sending…' : 'Send test email'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      if (!window.confirm('Reset EmailJS settings to the published defaults?')) return;
+                      resetEmailConfig();
+                    }}
+                  >
+                    <FaRotateLeft aria-hidden="true" /> Reset to defaults
+                  </button>
+                  {emailDirty && (
+                    <button type="button" className="btn btn-danger-ghost" onClick={discardEmailChanges}>Discard changes</button>
+                  )}
+                  {emailDirty && <span className="admin-dirty">Unsaved changes</span>}
+                </div>
+              </form>
+
+              <aside className="admin-side-list admin-email-summary" aria-label="Current EmailJS configuration">
+                <div className="admin-list-head">
+                  <h3>Currently used</h3>
+                  <span>{hasCustomEmailConfig ? 'Admin' : 'Code'}</span>
+                </div>
+                <dl className="admin-email-values">
+                  <div>
+                    <dt>Service ID</dt>
+                    <dd><code>{emailConfig.serviceId}</code></dd>
+                  </div>
+                  <div>
+                    <dt>Template ID</dt>
+                    <dd><code>{emailConfig.templateId}</code></dd>
+                  </div>
+                  <div>
+                    <dt>Public Key</dt>
+                    <dd><code>{emailConfig.publicKey}</code></dd>
+                  </div>
+                  <div>
+                    <dt>Messages go through</dt>
+                    <dd>{profile.email} (set in the EmailJS template)</dd>
+                  </div>
+                </dl>
+
+                <div className="admin-note">
+                  <FaTriangleExclamation aria-hidden="true" />
+                  <p>
+                    This is a static GitHub Pages site, so Admin saves are browser-local. They take effect for the Contact form
+                    in this browser and are included in JSON backups, but publishing new defaults for every visitor still requires
+                    updating the site code/environment and redeploying.
+                  </p>
+                </div>
+
+                <div className="admin-actions-row">
+                  <Link className="btn btn-primary" to="/contact"><FaEye aria-hidden="true" /> Open Contact form</Link>
+                  <a className="btn btn-ghost" href="https://dashboard.emailjs.com/admin" target="_blank" rel="noreferrer">Open EmailJS dashboard</a>
+                </div>
+              </aside>
+            </div>
+          )}
+
           {activeTab === 'data' && (
             <div className="admin-panel admin-data-grid">
               <article className="admin-info-card">
                 <h2><FaDownload aria-hidden="true" /> Export backup</h2>
-                <p>Download every local admin change (custom skills/projects, hidden projects and work experience) as JSON. Keep it as a backup or send it to a developer to publish permanently in code.</p>
+                <p>Download every local admin change (custom skills/projects, hidden projects, work experience and EmailJS settings) as JSON. Keep it as a backup or send it to a developer to publish permanently in code.</p>
                 <button type="button" className="btn btn-primary" onClick={exportData}><FaDownload aria-hidden="true" /> Download JSON</button>
               </article>
               <article className="admin-info-card">
@@ -717,6 +920,8 @@ export default function Admin() {
                     content.resetContent();
                     setDraftExperience(toExperienceDraft(defaultExperience));
                     setExperienceDirty(false);
+                    setEmailForm({ ...defaultEmailConfig });
+                    setEmailDirty(false);
                     notify('Local portfolio content reset to published defaults.');
                   }}
                 >

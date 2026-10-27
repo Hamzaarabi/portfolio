@@ -17,7 +17,7 @@ Personal portfolio of **Arabi Hamza**, full-stack web developer based in morocco
 - **⌘K command palette** — quick navigation, copy email, download CV, theme switch
 - **Three languages** — English, Français and العربية with a persistent navbar switcher, translated portfolio content, Arabic RTL layout and Arabic fonts
 - **Portfolio chatbot** — trilingual smart FAQ assistant for services, projects, skills, hiring, CV and WhatsApp contact; its Ask AI button sits above WhatsApp on the bottom-right
-- **Local Admin area (`/admin`)** — password-locked on the device; add skills/projects and edit work experience, with JSON backup/import
+- **Local Admin area (`/admin`)** — password-locked on the device; add skills/projects, edit work experience and configure EmailJS, with JSON backup/import
 - **Project case studies** — filter + search, WebP galleries with keyboard-accessible lightbox, prev/next navigation
 - **Animated experience** — typewriter hero, counting stats, scroll-reveal sections, animated skill bars, marquee
 - **Performance** — 68 images converted PNG → WebP (**~22 MB → 2.6 MB**), route-level code splitting, lazy images; total build ≈ 3.2 MB
@@ -74,7 +74,8 @@ Open `/#/admin` directly by URL (it is intentionally not linked from the public 
 - add/edit custom **projects** (details, stack, features, cover URL/upload and links)
 - hide/restore built-in projects locally
 - reorder and fully edit **work experience**
-- export/import all local changes as JSON
+- configure the **EmailJS** Service ID, Template ID and Public Key, send a test email, or reset to the published defaults
+- export/import all local changes as JSON (including EmailJS settings)
 
 > This is a static GitHub Pages site, so Admin changes are stored in the browser's
 > `localStorage` rather than a public server database. Export the JSON and commit its
@@ -82,7 +83,7 @@ Open `/#/admin` directly by URL (it is intentionally not linked from the public 
 > a backend/CMS such as Supabase/Firebase for a multi-device production admin.
 
 - Replace the résumé by overwriting `public/Hamza-CV.pdf`
-- Optional: copy `.env.example` → `.env` to use your own EmailJS keys
+- Optional: copy `.env.example` → `.env` to use your own EmailJS keys at build time. In Admin → **EmailJS**, edit the Service ID, Template ID and Public Key, click **Save email settings**, then use **Send test email** or open the Contact form. The Admin override applies in that browser; change `src/data/portfolio.js` (or the build environment variables) and redeploy to publish new defaults for everyone. Never put an EmailJS **private key** in this front-end.
 
 ## 📦 Deployment
 
