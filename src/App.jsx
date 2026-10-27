@@ -7,6 +7,7 @@ import CommandPalette from './components/CommandPalette';
 import WhatsAppFloat from './components/WhatsAppFloat';
 import ChatBot from './components/ChatBot';
 import { PortfolioContentProvider } from './content/PortfolioContentContext';
+import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { useTheme } from './hooks/hooks';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -31,6 +32,7 @@ function RouteEffects() {
  * HashRouter changing location.hash would be parsed as a route change.
  */
 function SkipLink() {
+  const { t } = useLanguage();
   return (
     <a
       href="#main"
@@ -44,12 +46,13 @@ function SkipLink() {
         }
       }}
     >
-      Skip to content
+      {t('common.skipToContent')}
     </a>
   );
 }
 
 function ScrollChrome() {
+  const { t } = useLanguage();
   const [progress, setProgress] = useState(0);
   const [showTop, setShowTop] = useState(false);
   useEffect(() => {
@@ -75,7 +78,7 @@ function ScrollChrome() {
         type="button"
         className={`back-top ${showTop ? 'show' : ''}`}
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        aria-label="Back to top"
+        aria-label={t('common.backToTop')}
         tabIndex={showTop ? 0 : -1}
       >
         <FaArrowUp />
@@ -85,8 +88,9 @@ function ScrollChrome() {
 }
 
 function PageFallback() {
+  const { t } = useLanguage();
   return (
-    <div className="page-fallback" role="status" aria-label="Loading page">
+    <div className="page-fallback" role="status" aria-label={t('common.loadingPage')}>
       <span className="spinner" />
     </div>
   );
@@ -108,6 +112,7 @@ export default function App() {
   }, []);
 
   return (
+    <LanguageProvider>
     <PortfolioContentProvider>
     <HashRouter>
       <SkipLink />
@@ -124,7 +129,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:slug" element={<ProjectDetails />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={<div dir="ltr" lang="en"><Admin /></div>} />
             {/* Legacy routes from v1 — keep old links & bookmarks working */}
             <Route path="/AboutMe" element={<Navigate to="/about" replace />} />
             <Route path="/Services" element={<Navigate to="/services" replace />} />
@@ -147,5 +152,6 @@ export default function App() {
       />
     </HashRouter>
     </PortfolioContentProvider>
+    </LanguageProvider>
   );
 }

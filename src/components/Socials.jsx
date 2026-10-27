@@ -1,19 +1,23 @@
 import { FaGithub, FaLinkedin, FaEnvelope, FaWhatsapp } from 'react-icons/fa6';
-import { profile } from '../data/portfolio';
+import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedProfile } from '../i18n/localizeContent';
 
 export default function Socials({ className = '' }) {
+  const { t } = useLanguage();
+  const profile = useLocalizedProfile();
+
   return (
     <div className={`socials ${className}`}>
-      <a href="https://github.com/Hamzaarabi" target="_blank" rel="noreferrer" aria-label="Hamza on GitHub" className="social-btn">
+      <a href="https://github.com/Hamzaarabi" target="_blank" rel="noreferrer" aria-label={t('socials.github', { name: profile.fullName })} className="social-btn">
         <FaGithub />
       </a>
-      <a href="https://www.linkedin.com/in/hamza-arabi/" target="_blank" rel="noreferrer" aria-label="Hamza on LinkedIn" className="social-btn">
+      <a href="https://www.linkedin.com/in/hamza-arabi/" target="_blank" rel="noreferrer" aria-label={t('socials.linkedin', { name: profile.fullName })} className="social-btn">
         <FaLinkedin />
       </a>
-      <a href={profile.whatsappLink} target="_blank" rel="noreferrer" aria-label={`Chat with ${profile.fullName} on WhatsApp`} className="social-btn">
+      <a href={profile.whatsappLink} target="_blank" rel="noreferrer" aria-label={t('socials.whatsapp', { name: profile.fullName })} className="social-btn">
         <FaWhatsapp />
       </a>
-      <a href={`mailto:${profile.email}`} aria-label={`Email ${profile.fullName}`} className="social-btn">
+      <a href={`mailto:${profile.email}`} aria-label={t('socials.email', { name: profile.fullName })} className="social-btn">
         <FaEnvelope />
       </a>
     </div>

@@ -1,17 +1,21 @@
 import { FaCheck } from 'react-icons/fa6';
-import { services } from '../data/portfolio';
 import SectionHeading from '../components/SectionHeading';
 import Reveal from '../components/Reveal';
+import { useLanguage } from '../i18n/LanguageContext';
+import { localizeServices } from '../i18n/localizeContent';
 
 export default function ServicesSection({ detailed = false, heading = true }) {
+  const { t, language } = useLanguage();
+  const services = localizeServices(language);
+
   return (
     <section className="section alt" id="services">
       <div className="container-x">
         {heading && (
           <SectionHeading
-            eyebrow="Services"
-            title="What I can build for you"
-            sub="From the first Figma mockup to launch-day SEO — one developer, the whole journey covered."
+            eyebrow={t('sections.services.eyebrow')}
+            title={t('sections.services.title')}
+            sub={t('sections.services.sub')}
           />
         )}
         <div className="services-grid">

@@ -91,12 +91,12 @@ export const socials = [
 ];
 
 export const navLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/about', label: 'About' },
-  { to: '/services', label: 'Services' },
-  { to: '/skills', label: 'Skills' },
-  { to: '/projects', label: 'Projects' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/', label: 'Home', key: 'home' },
+  { to: '/about', label: 'About', key: 'about' },
+  { to: '/services', label: 'Services', key: 'services' },
+  { to: '/skills', label: 'Skills', key: 'skills' },
+  { to: '/projects', label: 'Projects', key: 'projects' },
+  { to: '/contact', label: 'Contact', key: 'contact' },
 ];
 
 /* ── Services ─────────────────────────────────────────────── */

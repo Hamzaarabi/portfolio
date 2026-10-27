@@ -1,15 +1,19 @@
 import { Link } from 'react-router-dom';
 import { FaArrowRight, FaBriefcase, FaCheck, FaDownload, FaLanguage, FaLocationDot } from 'react-icons/fa6';
-import { profile } from '../data/portfolio';
 import SectionHeading from '../components/SectionHeading';
 import Socials from '../components/Socials';
 import Reveal from '../components/Reveal';
+import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedProfile } from '../i18n/localizeContent';
 
 export default function AboutSection() {
+  const { t } = useLanguage();
+  const profile = useLocalizedProfile();
+
   return (
     <section className="section" id="about">
       <div className="container-x">
-        <SectionHeading eyebrow="About me" title="Developer who ships, designer at heart" />
+        <SectionHeading eyebrow={t('aboutSection.eyebrow')} title={t('aboutSection.title')} />
         <div className="about-grid">
           <Reveal>
             <aside className="profile-card">
@@ -23,7 +27,7 @@ export default function AboutSection() {
               </ul>
               <Socials />
               <a href={profile.cv} download="Hamza-CV.pdf" className="btn btn-primary profile-cv">
-                <FaDownload /> Download CV
+                <FaDownload /> {t('common.downloadCv')}
               </a>
             </aside>
           </Reveal>
@@ -39,7 +43,7 @@ export default function AboutSection() {
                 ))}
               </ul>
               <Link to="/about" className="text-link big">
-                More about me <FaArrowRight />
+                {t('aboutSection.more')} <FaArrowRight className="directional-icon" />
               </Link>
             </div>
           </Reveal>

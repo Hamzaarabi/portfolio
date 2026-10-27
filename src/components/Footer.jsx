@@ -1,55 +1,57 @@
 import { Link } from 'react-router-dom';
 import { FaArrowUp, FaEnvelope, FaLocationDot, FaPhone, FaWhatsapp } from 'react-icons/fa6';
-import { navLinks, profile } from '../data/portfolio';
+import { navLinks } from '../data/portfolio';
 import Socials from './Socials';
 import Logo from '../assets/logo.webp';
+import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedProfile } from '../i18n/localizeContent';
 
 export default function Footer() {
+  const { t } = useLanguage();
+  const profile = useLocalizedProfile();
   const year = new Date().getFullYear();
+  const expertiseItems = t('footer.expertiseItems');
+
   return (
     <footer className="footer">
       <div className="container-x">
         <div className="footer-grid">
           <div className="footer-brand">
-            <Link to="/" className="brand">
-              <img src={Logo} alt="Hamza logo" className="brand-logo" />
-              <span className="brand-text">Hamza<em>.dev</em></span>
+            <Link to="/" className="brand" aria-label={t('nav.brandHome')}>
+              <img src={Logo} alt={t('nav.logoAlt')} className="brand-logo" />
+              <span className="brand-text" dir="ltr">Hamza<em>.dev</em></span>
             </Link>
             <p>{profile.tagline}</p>
             <Socials />
           </div>
 
-          <nav className="footer-col" aria-label="Footer">
-            <h3>Explore</h3>
+          <nav className="footer-col" aria-label={t('footer.explore')}>
+            <h3>{t('footer.explore')}</h3>
             {navLinks.map((l) => (
-              <Link key={l.to} to={l.to}>{l.label}</Link>
+              <Link key={l.to} to={l.to}>{t(`nav.${l.key}`)}</Link>
             ))}
           </nav>
 
           <div className="footer-col">
-            <h3>Expertise</h3>
-            <span>React Development</span>
-            <span>Laravel & Symfony APIs</span>
-            <span>SQL Server · MySQL · MongoDB</span>
-            <span>Sage ERP & Business Tools</span>
-            <span>E-Commerce & SEO</span>
+            <h3>{t('footer.expertise')}</h3>
+            {expertiseItems.map((item) => <span key={item}>{item}</span>)}
           </div>
 
           <div className="footer-col">
-            <h3>Get in touch</h3>
-            <a href={`mailto:${profile.email}`}><FaEnvelope /> {profile.email}</a>
-            <a href={profile.whatsappLink} target="_blank" rel="noreferrer"><FaWhatsapp /> WhatsApp {profile.whatsappDisplay}</a>
-            <a href={`tel:${profile.phone}`}><FaPhone /> {profile.phoneDisplay}</a>
-            <span><FaLocationDot /> {profile.location} · Remote worldwide</span>
+            <h3>{t('footer.getInTouch')}</h3>
+            <a href={`mailto:${profile.email}`} dir="ltr"><FaEnvelope /> {profile.email}</a>
+            <a href={profile.whatsappLink} target="_blank" rel="noreferrer"><FaWhatsapp /> WhatsApp <span dir="ltr">{profile.whatsappDisplay}</span></a>
+            <a href={`tel:${profile.phone}`} dir="ltr"><FaPhone /> {profile.phoneDisplay}</a>
+            <span><FaLocationDot /> {profile.location} · {t('footer.remoteWorldwide')}</span>
             <button type="button" className="to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-              <FaArrowUp /> Back to top
+              <FaArrowUp /> {t('common.backToTop')}
             </button>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <p>© {year} {profile.fullName}. All rights reserved.</p>
-          <p className="footer-built">Built with React & Vite · Designed with care in morocco</p>
+          <p>{t('footer.rights', { year, name: profile.fullName })}</p>
+          <p className="footer-built">{t('footer.built')}</p>
         </div>
       </div>
     </footer>
