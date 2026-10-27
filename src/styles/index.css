@@ -196,6 +196,10 @@ kbd {
 }
 .brand-text em { font-style: normal; color: var(--accent-2); }
 .brand-logo { height: 34px; width: auto; flex: none; display: block; }
+[data-theme='light'] .brand-logo {
+  height: 42px; padding: 5px 8px; border-radius: 10px;
+  background: #050807; box-shadow: 0 8px 20px -12px rgba(5, 8, 7, 0.55);
+}
 .nav-links { display: flex; gap: 0.4rem; }
 .nav-link {
   padding: 0.5rem 0.85rem; border-radius: 999px; font-weight: 500; font-size: 0.94rem;
@@ -204,12 +208,6 @@ kbd {
 .nav-link:hover { color: var(--text); background: var(--surface); }
 .nav-link.active { color: var(--accent-2); background: var(--surface); }
 .nav-actions { display: flex; align-items: center; gap: 0.6rem; }
-.palette-hint {
-  display: inline-flex; align-items: center; gap: 0.55rem;
-  padding: 0.5rem 0.75rem; border-radius: 12px; font-size: 0.82rem; color: var(--text-faint);
-  border: 1px solid var(--border); background: var(--surface); transition: border-color 0.2s;
-}
-.palette-hint:hover { border-color: var(--accent-2); color: var(--text-dim); }
 .language-switcher {
   min-height: 40px; display: inline-flex; align-items: center; gap: 0.45rem; flex: none;
   padding: 0.45rem 0.6rem; border-radius: 12px; color: var(--text-dim);
@@ -947,7 +945,7 @@ kbd {
   .footer-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 860px) {
-  .nav-links, .nav-cta, .palette-hint { display: none; }
+  .nav-links, .nav-cta { display: none; }
   .menu-btn { display: inline-flex; }
   .about-grid, .journey-grid, .contact-grid { grid-template-columns: 1fr; }
   .profile-card { position: static; max-width: 420px; margin-inline: auto; }
@@ -1005,9 +1003,6 @@ html[lang^='ar'] .project-cat { letter-spacing: 0; }
 [dir='rtl'] .chat-message.user { border-bottom-right-radius: 17px; border-bottom-left-radius: 6px; }
 [dir='rtl'] .chatbot-form button svg { transform: scaleX(-1); }
 
-@media (max-width: 1120px) {
-  .palette-hint { display: none; }
-}
 @media (max-width: 860px) {
   .stat:nth-child(3) { border-inline-start: 0; }
 }
@@ -1018,10 +1013,6 @@ html[lang^='ar'] .project-cat { letter-spacing: 0; }
   [dir='rtl'] .lightbox-btn.prev { right: 8px; }
   [dir='rtl'] .lightbox-btn.next { left: 8px; }
 }
-@media (max-width: 430px) {
-  .brand-text { display: none; }
-}
-
 /* ── Reduced motion ──────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

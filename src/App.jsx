@@ -118,7 +118,7 @@ export default function App() {
       <SkipLink />
       <RouteEffects />
       <ScrollChrome />
-      <Navbar theme={theme} onToggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)} />
+      <Navbar theme={theme} onToggleTheme={toggleTheme} />
       <main id="main" tabIndex={-1}>
         <Suspense fallback={<PageFallback />}>
           <Routes>
