@@ -4,6 +4,10 @@ import { FaArrowUp } from 'react-icons/fa6';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CommandPalette from './components/CommandPalette';
+import WhatsAppFloat from './components/WhatsAppFloat';
+import ChatBot from './components/ChatBot';
+import { PortfolioContentProvider } from './content/PortfolioContentContext';
+import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { useTheme } from './hooks/hooks';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -14,14 +18,41 @@ const Projects = lazy(() => import('./pages/Projects'));
 const ProjectDetails = lazy(() => import('./pages/ProjectDetails'));
 const Contact = lazy(() => import('./pages/Contact'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 function RouteEffects() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' }); }, [pathname]);
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }, [pathname]);
   return null;
 }
 
+/**
+ * Skip-to-content link for keyboard/screen-reader users.
+ * Uses a click handler instead of a bare href="#main" because with
+ * HashRouter changing location.hash would be parsed as a route change.
+ */
+function SkipLink() {
+  const { t } = useLanguage();
+  return (
+    <a
+      href="#main"
+      className="skip-link"
+      onClick={(e) => {
+        e.preventDefault();
+        const main = document.getElementById('main');
+        if (main) {
+          main.focus({ preventScroll: false });
+          main.scrollIntoView();
+        }
+      }}
+    >
+      {t('common.skipToContent')}
+    </a>
+  );
+}
+
 function ScrollChrome() {
+  const { t } = useLanguage();
   const [progress, setProgress] = useState(0);
   const [showTop, setShowTop] = useState(false);
   useEffect(() => {
@@ -47,7 +78,7 @@ function ScrollChrome() {
         type="button"
         className={`back-top ${showTop ? 'show' : ''}`}
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        aria-label="Back to top"
+        aria-label={t('common.backToTop')}
         tabIndex={showTop ? 0 : -1}
       >
         <FaArrowUp />
@@ -57,8 +88,9 @@ function ScrollChrome() {
 }
 
 function PageFallback() {
+  const { t } = useLanguage();
   return (
-    <div className="page-fallback" role="status" aria-label="Loading page">
+    <div className="page-fallback" role="status" aria-label={t('common.loadingPage')}>
       <span className="spinner" />
     </div>
   );
@@ -80,12 +112,14 @@ export default function App() {
   }, []);
 
   return (
+    <LanguageProvider>
+    <PortfolioContentProvider>
     <HashRouter>
       <SkipLink />
       <RouteEffects />
       <ScrollChrome />
       <Navbar theme={theme} onToggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)} />
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -95,6 +129,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:slug" element={<ProjectDetails />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/admin" element={<div dir="ltr" lang="en"><Admin /></div>} />
             {/* Legacy routes from v1 — keep old links & bookmarks working */}
             <Route path="/AboutMe" element={<Navigate to="/about" replace />} />
             <Route path="/Services" element={<Navigate to="/services" replace />} />
@@ -107,6 +142,8 @@ export default function App() {
         </Suspense>
       </main>
       <Footer />
+      <WhatsAppFloat />
+      <ChatBot />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -114,5 +151,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
     </HashRouter>
+    </PortfolioContentProvider>
+    </LanguageProvider>
   );
 }

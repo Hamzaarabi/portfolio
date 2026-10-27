@@ -3,19 +3,28 @@ import { useEffect, useRef, useState } from 'react';
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** Cycles through words with a typewriter effect. */
+function splitGraphemes(value) {
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    return [...segmenter.segment(value)].map(({ segment }) => segment);
+  }
+  return Array.from(value);
+}
+
+/** Cycles through words with a grapheme-safe typewriter effect (including Arabic). */
 export function useTypewriter(words, typeMs = 75, deleteMs = 38, pauseMs = 1700) {
   const [text, setText] = useState('');
   useEffect(() => {
     if (prefersReducedMotion()) { setText(words[0]); return; }
+    const segmentedWords = words.map(splitGraphemes);
     let word = 0, char = 0, deleting = false, timer;
     const tick = () => {
-      const current = words[word];
+      const current = segmentedWords[word];
       char += deleting ? -1 : 1;
-      setText(current.slice(0, char));
+      setText(current.slice(0, char).join(''));
       let delay = deleting ? deleteMs : typeMs;
       if (!deleting && char === current.length) { delay = pauseMs; deleting = true; }
-      else if (deleting && char === 0) { deleting = false; word = (word + 1) % words.length; delay = 350; }
+      else if (deleting && char === 0) { deleting = false; word = (word + 1) % segmentedWords.length; delay = 350; }
       timer = setTimeout(tick, delay);
     };
     timer = setTimeout(tick, 400);

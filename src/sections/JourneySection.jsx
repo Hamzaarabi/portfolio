@@ -1,7 +1,9 @@
 import { FaBriefcase, FaGraduationCap } from 'react-icons/fa6';
-import { experience, education } from '../data/portfolio';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 import SectionHeading from '../components/SectionHeading';
 import Reveal from '../components/Reveal';
+import { useLanguage } from '../i18n/LanguageContext';
+import { localizeEducation, localizeExperience } from '../i18n/localizeContent';
 
 export function Timeline({ items, icon: Icon, heading }) {
   return (
@@ -31,17 +33,22 @@ export function Timeline({ items, icon: Icon, heading }) {
 }
 
 export default function JourneySection() {
+  const { t, language } = useLanguage();
+  const { experience: rawExperience } = usePortfolioContent();
+  const experience = localizeExperience(language, rawExperience);
+  const education = localizeEducation(language);
+
   return (
     <section className="section" id="journey">
       <div className="container-x">
         <SectionHeading
-          eyebrow="My journey"
-          title="Experience & education"
-          sub="From a first line of HTML in 2021 to full-stack roles in corporate and agency teams."
+          eyebrow={t('sections.journey.eyebrow')}
+          title={t('sections.journey.title')}
+          sub={t('sections.journey.sub')}
         />
         <div className="journey-grid">
-          <Timeline items={experience} icon={FaBriefcase} heading="Experience" />
-          <Timeline items={education} icon={FaGraduationCap} heading="Education" />
+          <Timeline items={experience} icon={FaBriefcase} heading={t('sections.journey.experience')} />
+          <Timeline items={education} icon={FaGraduationCap} heading={t('sections.journey.education')} />
         </div>
       </div>
     </section>

@@ -5,7 +5,7 @@ import ServicesSection from '../sections/ServicesSection';
 import ProjectsSection from '../sections/ProjectsSection';
 import SkillsSection from '../sections/SkillsSection';
 import JourneySection from '../sections/JourneySection';
-import { CtaBanner } from '../sections/Extras';
+import { CtaBanner, WorkWithMeSection } from '../sections/Extras';
 
 export default function Home() {
   useTitle('');
@@ -18,6 +18,7 @@ export default function Home() {
       <ProjectsSection />
       <SkillsSection />
       <JourneySection />
+      <WorkWithMeSection />
       <CtaBanner />
     </>
   );

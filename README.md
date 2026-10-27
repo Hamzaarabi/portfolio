@@ -15,6 +15,9 @@ Personal portfolio of **Arabi Hamza**, full-stack web developer based in morocco
 - **Custom design system** — Space Grotesk + Inter, emerald aurora gradients, glass cards
 - **Dark / light themes** — persisted, respects `prefers-color-scheme`, no flash on load
 - **⌘K command palette** — quick navigation, copy email, download CV, theme switch
+- **Three languages** — English, Français and العربية with a persistent navbar switcher, translated portfolio content, Arabic RTL layout and Arabic fonts
+- **Portfolio chatbot** — trilingual smart FAQ assistant for services, projects, skills, hiring, CV and WhatsApp contact; its Ask AI button sits above WhatsApp on the bottom-right
+- **Local Admin area (`/admin`)** — password-locked on the device; add skills/projects and edit work experience, with JSON backup/import
 - **Project case studies** — filter + search, WebP galleries with keyboard-accessible lightbox, prev/next navigation
 - **Animated experience** — typewriter hero, counting stats, scroll-reveal sections, animated skill bars, marquee
 - **Performance** — 68 images converted PNG → WebP (**~22 MB → 2.6 MB**), route-level code splitting, lazy images; total build ≈ 3.2 MB
@@ -50,10 +53,33 @@ npm run dev       # http://localhost:5173
 
 ## ✏️ Editing content
 
-**All text lives in one file:** [`src/data/portfolio.js`](src/data/portfolio.js) —
+Published default content lives in [`src/data/portfolio.js`](src/data/portfolio.js) —
 profile, services, skills, experience, education, projects, FAQ.
 Edit it and every page updates automatically. Drop new project screenshots
 (WebP) into `src/assets/webp/projectN/` and they appear in the gallery in filename order.
+
+### Languages (English / Français / العربية)
+
+Use the language selector in the navbar. The choice is saved in `localStorage`; on a first
+visit, the browser language is used when it is English, French or Arabic. UI copy lives in
+`src/i18n/translations.js`, while French/Arabic versions of the built-in portfolio content
+live in `src/i18n/localizeContent.js`. Arabic switches the document to RTL. Custom skills,
+projects and experience created in Admin keep the text entered by the owner.
+
+### Admin area (`/#/admin`)
+
+Open `/#/admin` directly by URL (it is intentionally not linked from the public navigation or footer), create a local password on first use, then:
+
+- add/edit custom **skills** (group, level, colour and icon style)
+- add/edit custom **projects** (details, stack, features, cover URL/upload and links)
+- hide/restore built-in projects locally
+- reorder and fully edit **work experience**
+- export/import all local changes as JSON
+
+> This is a static GitHub Pages site, so Admin changes are stored in the browser's
+> `localStorage` rather than a public server database. Export the JSON and commit its
+> content into `src/data/portfolio.js` to publish changes for every visitor, or connect
+> a backend/CMS such as Supabase/Firebase for a multi-device production admin.
 
 - Replace the résumé by overwriting `public/Hamza-CV.pdf`
 - Optional: copy `.env.example` → `.env` to use your own EmailJS keys
@@ -71,10 +97,12 @@ Edit it and every page updates automatically. Drop new project screenshots
 
 ```
 src/
-  data/portfolio.js     ← single source of truth for all content
-  pages/                ← Home, About, Services, Skills, Projects(+Details), Contact, 404
+  data/portfolio.js     ← published default content
+  i18n/                 ← English/French/Arabic translations + content localization
+  content/              ← runtime content provider + local Admin overlay
+  pages/                ← Home, About, Services, Skills, Projects(+Details), Contact, Admin, 404
   sections/             ← Hero, About, Services, Projects, Skills, Journey, Extras
-  components/           ← Navbar, Footer, CommandPalette, Lightbox, ProjectCard…
+  components/           ← Navbar, Footer, CommandPalette, ChatBot, Lightbox, ProjectCard…
   hooks/                ← typewriter, counters, theme, page titles
   styles/index.css      ← the whole design system
   assets/webp/          ← optimised project imagery

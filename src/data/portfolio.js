@@ -9,11 +9,11 @@ import {
   FaReact, FaLaravel, FaHtml5, FaCss3Alt, FaBootstrap, FaFigma, FaWordpress,
   FaPython, FaGitAlt, FaCloud, FaCode, FaServer, FaMobileScreenButton,
   FaGaugeHigh, FaScrewdriverWrench, FaPenRuler, FaComments, FaHandshake,
-  FaBolt, FaLightbulb,
+  FaBolt, FaLightbulb, FaCartShopping, FaChartLine, FaDatabase,
 } from 'react-icons/fa6';
 import { IoLogoJavascript, IoLogoCapacitor } from 'react-icons/io5';
 import { BiLogoJquery } from 'react-icons/bi';
-import { SiMysql, SiMongodb, SiPhp } from 'react-icons/si';
+import { SiMysql, SiMongodb, SiPhp, SiSymfony, SiSage } from 'react-icons/si';
 
 import chefoodCover from '../assets/webp/chefood.webp';
 import voipCover from '../assets/webp/voip.webp';
@@ -49,32 +49,38 @@ export const profile = {
   firstName: 'Hamza',
   fullName: 'Arabi Hamza',
   role: 'Full-Stack Web Developer',
-  roles: ['Full-Stack Developer', 'React Developer', 'Laravel Developer', 'UI-Focused Engineer'],
+  roles: ['Full-Stack Developer', 'React Developer', 'Laravel & Symfony Developer', 'Freelance Web Developer'],
   location: 'morocco',
   email: 'arabihamzaaa@gmail.com',
   phone: '+212-698336744',
   phoneDisplay: '+212 698-336744',
+  whatsapp: '212620861634',
+  whatsappDisplay: '06 20 86 16 34',
+  whatsappLink:
+    'https://wa.me/212620861634?text=' +
+    encodeURIComponent("Hello Hamza, I found your portfolio and I'd like to discuss a project / opportunity."),
   languages: ['Arabic', 'French', 'English'],
   currentRole: 'Full-Stack Developer @ Delta Holding',
   available: true,
+  availabilityLabel: 'Open to freelance projects & full-time roles',
   cv: `${import.meta.env.BASE_URL}Hamza-CV.pdf`,
   tagline:
-    'I design and build fast, responsive web applications — from pixel-perfect React interfaces to robust Laravel APIs and well-structured databases.',
+    'I help businesses and recruiters ship fast, professional websites and business applications — React interfaces, Laravel & Symfony back ends, SQL databases and ERP-ready tools that turn visitors into customers.',
   about: [
-    "I'm Arabi Hamza, a full-stack web developer based in morocco, currently building and maintaining web platforms at Delta Holding in Rabat. I work across the whole stack: React and JavaScript on the front end, Laravel and PHP on the back end, with MySQL and MongoDB for data.",
+    "I'm Arabi Hamza, a full-stack web developer based in morocco, currently building and maintaining web platforms at Delta Holding in Rabat. I work across the whole stack: React and JavaScript on the front end, Laravel, Symfony and PHP on the back end, with MySQL, SQL Server and MongoDB for data — plus business tools such as Sage ERP in day-to-day company work.",
     'My path started with a diploma in Digital Development (full-stack web option) at ISTA NTIC Settat, followed by hands-on agency and corporate roles — shipping company websites, an insurance platform and mobile app, SEO improvements and data tooling. I recently completed a Licence in Computer Engineering & Digitalisation at ENSA Kénitra.',
     'I care about the details users feel: clean interfaces designed in Figma, smooth responsive behaviour on every screen, and code that stays maintainable long after launch.',
   ],
   highlights: [
-    'End-to-end delivery: Figma design → React UI → Laravel API → database',
-    'Professional experience in corporate (Delta Holding) and agency settings',
-    'Responsive, mobile-first builds that work on every device',
-    'Trilingual communication — Arabic, French and English',
+    'End-to-end delivery: Figma design → React UI → Laravel/Symfony API → SQL database',
+    'Professional experience in corporate (Delta Holding), agency and international client work',
+    'Business mindset: websites and internal tools built to save time and generate leads',
+    'Fast, direct communication on WhatsApp — Arabic, French and English',
   ],
   stats: [
     { value: 3, suffix: '+', label: 'Years of experience' },
     { value: 6, suffix: '', label: 'Featured projects' },
-    { value: 15, suffix: '+', label: 'Technologies mastered' },
+    { value: 18, suffix: '+', label: 'Technologies & tools' },
     { value: 3, suffix: '', label: 'Languages spoken' },
   ],
 };
@@ -85,51 +91,69 @@ export const socials = [
 ];
 
 export const navLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/about', label: 'About' },
-  { to: '/services', label: 'Services' },
-  { to: '/skills', label: 'Skills' },
-  { to: '/projects', label: 'Projects' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/', label: 'Home', key: 'home' },
+  { to: '/about', label: 'About', key: 'about' },
+  { to: '/services', label: 'Services', key: 'services' },
+  { to: '/skills', label: 'Skills', key: 'skills' },
+  { to: '/projects', label: 'Projects', key: 'projects' },
+  { to: '/contact', label: 'Contact', key: 'contact' },
 ];
 
 /* ── Services ─────────────────────────────────────────────── */
 export const services = [
   {
     icon: FaCode,
-    title: 'Web Development',
-    desc: 'Custom websites and web applications built with React and Laravel — clean architecture, fast loads, and code that is easy to extend.',
-    points: ['Business & portfolio websites', 'Full-stack web applications', 'E-commerce storefronts'],
+    title: 'Websites & Web Apps',
+    desc: 'Professional business websites and custom web applications that load fast, look credible and turn visitors into enquiries, bookings and sales.',
+    points: ['Company & portfolio websites', 'Custom web applications (React)', 'Landing pages that convert'],
+  },
+  {
+    icon: FaCartShopping,
+    title: 'E-Commerce Stores',
+    desc: 'Online stores designed to sell: clear product pages, simple checkout paths and a catalogue that is easy for your team to update.',
+    points: ['Product catalogues & categories', 'Cart & order flows', 'WhatsApp order/contact integration'],
+  },
+  {
+    icon: FaChartLine,
+    title: 'ERP & Business Software',
+    desc: 'Internal tools and management software for companies — the kind of day-to-day systems I support at Delta Holding, including Sage ERP environments.',
+    points: ['Management dashboards & admin panels', 'Sage ERP support & business data', 'Internal tools that save staff time'],
+  },
+  {
+    icon: FaServer,
+    title: 'Back-End & APIs',
+    desc: 'Secure, maintainable back ends with Laravel and Symfony: authentication, REST APIs and business logic your front end and mobile apps can rely on.',
+    points: ['Laravel & Symfony development', 'REST API design & integration', 'Admin/back-office systems'],
+  },
+  {
+    icon: FaDatabase,
+    title: 'Databases & Data',
+    desc: 'Well-structured data layers with MySQL, SQL Server and MongoDB — plus cleanup, migration and reporting so your numbers stay trustworthy.',
+    points: ['Database design (SQL Server / MySQL)', 'Queries, reports & optimisation', 'Data import, cleanup & migration'],
   },
   {
     icon: FaPenRuler,
     title: 'UI/UX & Web Design',
-    desc: 'Interfaces designed in Figma before a line of code is written, so the final product looks sharp and guides users effortlessly.',
-    points: ['Figma wireframes & prototypes', 'Design systems & branding', 'Logo & graphic design'],
-  },
-  {
-    icon: FaServer,
-    title: 'APIs & Back-End',
-    desc: 'Secure, well-structured back ends with Laravel and PHP — REST APIs, authentication, and MySQL / MongoDB data layers that scale.',
-    points: ['REST API development', 'Database design & optimisation', 'Admin panels & dashboards'],
+    desc: 'Interfaces designed in Figma before a line of code is written, so the final product looks sharp and guides users effortlessly to action.',
+    points: ['Figma wireframes & prototypes', 'Brand-aligned page design', 'Logo & graphic assets'],
   },
   {
     icon: FaMobileScreenButton,
-    title: 'Responsive & Mobile',
-    desc: 'Mobile-first layouts that adapt beautifully to every screen — and hybrid mobile apps with Capacitor when you need to reach app stores.',
-    points: ['Mobile-first responsive design', 'Capacitor hybrid apps', 'Cross-browser testing'],
+    title: 'Mobile Apps & Responsive',
+    desc: 'Mobile-first websites that work beautifully on every phone — and hybrid Android/iOS apps with Capacitor from a single codebase.',
+    points: ['Mobile-first responsive design', 'Capacitor hybrid apps', 'Cross-device testing'],
   },
   {
     icon: FaGaugeHigh,
-    title: 'SEO & Performance',
-    desc: 'Technical SEO and performance tuning from real production work: semantic markup, optimised assets and Core-Web-Vitals-friendly pages.',
-    points: ['On-page & technical SEO', 'Image & asset optimisation', 'Speed audits & fixes'],
+    title: 'SEO & Speed',
+    desc: 'Get found on Google and keep visitors: technical SEO, semantic pages and performance tuning based on real production experience.',
+    points: ['On-page & technical SEO', 'Core Web Vitals optimisation', 'Analytics-ready structure'],
   },
   {
     icon: FaScrewdriverWrench,
     title: 'Maintenance & Support',
-    desc: 'Ongoing care for live websites — content and data updates, feature tweaks, bug fixes and friendly technical support for your team.',
-    points: ['Website updates & fixes', 'Data & content management', 'Technical support'],
+    desc: 'Ongoing care for live websites and business tools — updates, fixes, new features and friendly support, including direct WhatsApp contact.',
+    points: ['Updates, fixes & new features', 'Content & data management', 'Fast support for your team'],
   },
 ];
 
@@ -157,15 +181,18 @@ export const skillGroups = [
     title: 'Back-End & Data',
     skills: [
       { name: 'Laravel', level: 75, icon: FaLaravel, color: '#ff2d20' },
+      { name: 'Symfony', level: 70, icon: SiSymfony, color: '#9ca3af' },
       { name: 'PHP', level: 75, icon: SiPhp, color: '#777bb4' },
       { name: 'MySQL', level: 75, icon: SiMysql, color: '#f29111' },
+      { name: 'SQL Server', level: 72, icon: FaDatabase, color: '#cc292b' },
       { name: 'MongoDB', level: 85, icon: SiMongodb, color: '#47a248' },
       { name: 'Python', level: 40, icon: FaPython, color: '#ffd343' },
     ],
   },
   {
-    title: 'Tools & Design',
+    title: 'Tools & Business',
     skills: [
+      { name: 'Sage ERP', level: 68, icon: SiSage, color: '#00d639' },
       { name: 'Git & GitHub', level: 85, icon: FaGitAlt, color: '#f05032' },
       { name: 'WordPress', level: 65, icon: FaWordpress, color: '#21759b' },
       { name: 'REST APIs', level: 80, icon: FaServer, color: '#2b9e7a' },
@@ -177,8 +204,9 @@ export const skillGroups = [
 ];
 
 export const techMarquee = [
-  'React', 'Laravel', 'JavaScript', 'PHP', 'MySQL', 'MongoDB', 'HTML5', 'CSS3',
-  'Bootstrap', 'REST APIs', 'Figma', 'Git & GitHub', 'WordPress', 'Capacitor', 'Azure', 'Python',
+  'React', 'Laravel', 'Symfony', 'JavaScript', 'PHP', 'MySQL', 'SQL Server', 'MongoDB',
+  'Sage ERP', 'REST APIs', 'HTML5', 'CSS3', 'Bootstrap', 'Figma', 'Git & GitHub',
+  'WordPress', 'Capacitor', 'Azure', 'Python', 'E-Commerce',
 ];
 
 export const certifications = ['HTML', 'CSS', 'JavaScript', 'PHP'];
@@ -394,7 +422,7 @@ export const projects = [
 export const faqs = [
   {
     q: 'Are you available for new projects or roles?',
-    a: "Yes — I'm open to full-time opportunities and freelance projects. The fastest way to reach me is the contact form or email; I usually reply within 24–48 hours.",
+    a: "Yes — I'm open to freelance projects and full-time roles. The fastest way to reach me is WhatsApp on 06 20 86 16 34 (use the green button on this site); you can also use the contact form or email and I usually reply within 24–48 hours.",
   },
   {
     q: 'Do you work remotely?',

@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { FaBars, FaMoon, FaSun, FaXmark, FaArrowRight } from 'react-icons/fa6';
 import { navLinks } from '../data/portfolio';
+import Logo from '../assets/logo.webp';
+import { useLanguage } from '../i18n/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -26,41 +30,42 @@ export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
   return (
     <header className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="container-x nav-inner">
-        <Link to="/" className="brand" aria-label="Hamza — home">
-          <span className="brand-mark">HA</span>
-          <span className="brand-text">Hamza<em>.dev</em></span>
+        <Link to="/" className="brand" aria-label={t('nav.brandHome')}>
+          <img src={Logo} alt={t('nav.logoAlt')} className="brand-logo" />
+          <span className="brand-text" dir="ltr">Hamza<em>.dev</em></span>
         </Link>
 
-        <nav className="nav-links" aria-label="Primary">
+        <nav className="nav-links" aria-label={t('nav.primary')}>
           {navLinks.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              {l.label}
+              {t(`nav.${l.key}`)}
             </NavLink>
           ))}
         </nav>
 
         <div className="nav-actions">
-          <button type="button" className="palette-hint" onClick={onOpenPalette} aria-label="Open quick navigation (Control K)">
-            <span>Quick nav</span>
+          <button type="button" className="palette-hint" onClick={onOpenPalette} aria-label={t('nav.openQuickNav')}>
+            <span>{t('nav.quickNav')}</span>
             <kbd>⌘K</kbd>
           </button>
+          <LanguageSwitcher />
           <button
             type="button"
             className="icon-btn"
             onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            aria-label={theme === 'dark' ? t('nav.switchLight') : t('nav.switchDark')}
           >
             {theme === 'dark' ? <FaSun /> : <FaMoon />}
           </button>
           <Link to="/contact" className="btn btn-primary btn-sm nav-cta">
-            Hire me <FaArrowRight />
+            {t('nav.hireMe')} <FaArrowRight className="directional-icon" />
           </Link>
           <button
             type="button"
             className="icon-btn menu-btn"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-label={open ? t('nav.closeMenu') : t('nav.openMenu')}
           >
             {open ? <FaXmark /> : <FaBars />}
           </button>
@@ -68,13 +73,13 @@ export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
       </div>
 
       <div className={`mobile-menu ${open ? 'open' : ''}`}>
-        <nav aria-label="Mobile">
+        <nav aria-label={t('nav.mobile')}>
           {navLinks.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`}>
-              {l.label}
+              {t(`nav.${l.key}`)}
             </NavLink>
           ))}
-          <Link to="/contact" className="btn btn-primary mobile-cta">Hire me <FaArrowRight /></Link>
+          <Link to="/contact" className="btn btn-primary mobile-cta">{t('nav.hireMe')} <FaArrowRight className="directional-icon" /></Link>
         </nav>
       </div>
     </header>

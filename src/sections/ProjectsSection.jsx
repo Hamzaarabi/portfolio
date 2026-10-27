@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react';
 import { FaMagnifyingGlass } from 'react-icons/fa6';
-import { projects, projectFilters } from '../data/portfolio';
+import { projectFilters } from '../data/portfolio';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 import SectionHeading from '../components/SectionHeading';
 import ProjectCard from '../components/ProjectCard';
 import Reveal from '../components/Reveal';
+import { useLanguage } from '../i18n/LanguageContext';
+import { localizeProjectFilter, localizeProjects } from '../i18n/localizeContent';
 
 export default function ProjectsSection({ heading = true, withSearch = false }) {
+  const { t, language } = useLanguage();
+  const { projects: rawProjects } = usePortfolioContent();
+  const projects = useMemo(() => localizeProjects(language, rawProjects), [language, rawProjects]);
   const [filter, setFilter] = useState('All');
   const [query, setQuery] = useState('');
 
@@ -14,29 +20,23 @@ export default function ProjectsSection({ heading = true, withSearch = false }) 
     return [...projects]
       .sort((a, b) => b.year - a.year)
       .filter((p) => filter === 'All' || p.category === filter)
-      .filter(
-        (p) =>
-          !q ||
-          p.title.toLowerCase().includes(q) ||
-          p.stack.some((s) => s.toLowerCase().includes(q)) ||
-          p.tags.some((t) => t.toLowerCase().includes(q))
-      );
-  }, [filter, query]);
+      .filter((p) => !q || (p.searchText || '').includes(q));
+  }, [filter, query, projects]);
 
   return (
     <section className="section" id="projects">
       <div className="container-x">
         {heading && (
           <SectionHeading
-            eyebrow="Selected work"
-            title="Projects I'm proud of"
-            sub="Real products for real clients — plus the personal projects that started it all. Open any case study for the full story and gallery."
+            eyebrow={t('sections.projects.eyebrow')}
+            title={t('sections.projects.title')}
+            sub={t('sections.projects.sub')}
           />
         )}
 
         <Reveal>
           <div className="filter-row">
-            <div className="filter-group" role="group" aria-label="Filter projects by type">
+            <div className="filter-group" role="group" aria-label={t('projects.filterByType')}>
               {projectFilters.map((f) => (
                 <button
                   key={f}
@@ -45,19 +45,19 @@ export default function ProjectsSection({ heading = true, withSearch = false }) 
                   aria-pressed={filter === f}
                   onClick={() => setFilter(f)}
                 >
-                  {f}
+                  {localizeProjectFilter(language, f)}
                 </button>
               ))}
             </div>
             {withSearch && (
               <label className="search-box">
                 <FaMagnifyingGlass aria-hidden="true" />
-                <span className="sr-only">Search projects by name or technology</span>
+                <span className="sr-only">{t('projects.searchLabel')}</span>
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search React, Laravel…"
+                  placeholder={t('projects.searchPlaceholder')}
                 />
               </label>
             )}
@@ -65,7 +65,7 @@ export default function ProjectsSection({ heading = true, withSearch = false }) 
         </Reveal>
 
         {visible.length === 0 ? (
-          <p className="empty-state">No projects match your search yet — try another keyword or filter.</p>
+          <p className="empty-state">{t('projects.empty')}</p>
         ) : (
           <div className="projects-grid">
             {visible.map((p, i) => (
