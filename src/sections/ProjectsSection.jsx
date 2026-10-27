@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { FaMagnifyingGlass } from 'react-icons/fa6';
-import { projects, projectFilters } from '../data/portfolio';
+import { projectFilters } from '../data/portfolio';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 import SectionHeading from '../components/SectionHeading';
 import ProjectCard from '../components/ProjectCard';
 import Reveal from '../components/Reveal';
 
 export default function ProjectsSection({ heading = true, withSearch = false }) {
+  const { projects } = usePortfolioContent();
   const [filter, setFilter] = useState('All');
   const [query, setQuery] = useState('');
 
@@ -21,7 +23,7 @@ export default function ProjectsSection({ heading = true, withSearch = false }) 
           p.stack.some((s) => s.toLowerCase().includes(q)) ||
           p.tags.some((t) => t.toLowerCase().includes(q))
       );
-  }, [filter, query]);
+  }, [filter, query, projects]);
 
   return (
     <section className="section" id="projects">

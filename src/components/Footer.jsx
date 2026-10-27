@@ -24,6 +24,7 @@ export default function Footer() {
             {navLinks.map((l) => (
               <Link key={l.to} to={l.to}>{l.label}</Link>
             ))}
+            <Link to="/admin">Admin</Link>
           </nav>
 
           <div className="footer-col">

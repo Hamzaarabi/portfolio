@@ -1,5 +1,6 @@
 import { FaBriefcase, FaGraduationCap } from 'react-icons/fa6';
-import { experience, education } from '../data/portfolio';
+import { education } from '../data/portfolio';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 import SectionHeading from '../components/SectionHeading';
 import Reveal from '../components/Reveal';
 
@@ -31,6 +32,7 @@ export function Timeline({ items, icon: Icon, heading }) {
 }
 
 export default function JourneySection() {
+  const { experience } = usePortfolioContent();
   return (
     <section className="section" id="journey">
       <div className="container-x">

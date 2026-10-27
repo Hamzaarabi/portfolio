@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { skillGroups } from '../data/portfolio';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 import SectionHeading from '../components/SectionHeading';
 import Reveal from '../components/Reveal';
 
@@ -42,6 +42,7 @@ function SkillBar({ skill }) {
 }
 
 export default function SkillsSection({ heading = true }) {
+  const { skillGroups } = usePortfolioContent();
   return (
     <section className="section alt" id="skills">
       <div className="container-x">

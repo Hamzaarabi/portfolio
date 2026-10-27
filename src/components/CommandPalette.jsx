@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaHouse, FaUser, FaBriefcase, FaCode, FaFolderOpen, FaEnvelope,
-  FaDownload, FaCopy, FaCheck, FaGithub, FaLinkedin, FaMoon, FaSun, FaMagnifyingGlass, FaWhatsapp,
+  FaDownload, FaCopy, FaCheck, FaGithub, FaLinkedin, FaMoon, FaSun, FaMagnifyingGlass, FaWhatsapp, FaLock,
 } from 'react-icons/fa6';
 import { profile } from '../data/portfolio';
 
@@ -22,6 +22,7 @@ export default function CommandPalette({ open, onClose, theme, onToggleTheme }) 
       { label: 'Go to Skills', icon: FaCode, run: () => navigate('/skills') },
       { label: 'Go to Projects', icon: FaFolderOpen, run: () => navigate('/projects') },
       { label: 'Go to Contact', icon: FaEnvelope, run: () => navigate('/contact') },
+      { label: 'Open Admin — manage skills, projects & experience', icon: FaLock, run: () => navigate('/admin') },
       { label: `Chat on WhatsApp — ${profile.whatsappDisplay}`, icon: FaWhatsapp, run: () => window.open(profile.whatsappLink, '_blank') },
       { label: 'Download my CV (PDF)', icon: FaDownload, run: () => window.open(profile.cv, '_blank') },
       {

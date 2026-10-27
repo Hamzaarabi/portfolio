@@ -4,6 +4,7 @@ import { profile, techMarquee } from '../data/portfolio';
 import { useTypewriter, useCounter } from '../hooks/hooks';
 import Socials from '../components/Socials';
 import Reveal from '../components/Reveal';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 
 function Stat({ value, suffix, label }) {
   const [ref, display] = useCounter(value);
@@ -45,7 +46,15 @@ deploy(developer.build());
 }
 
 export default function Hero() {
+  const { projects, skillGroups } = usePortfolioContent();
   const typed = useTypewriter(profile.roles);
+  const stats = profile.stats.map((stat) => {
+    if (stat.label === 'Featured projects') return { ...stat, value: projects.length };
+    if (stat.label === 'Technologies & tools') {
+      return { ...stat, value: skillGroups.reduce((sum, group) => sum + group.skills.length, 0) };
+    }
+    return stat;
+  });
   return (
     <section className="hero">
       <div className="aurora" aria-hidden="true">
@@ -98,7 +107,7 @@ export default function Hero() {
       <div className="container-x">
         <Reveal delay={120}>
           <div className="stats-row">
-            {profile.stats.map((s) => (
+            {stats.map((s) => (
               <Stat key={s.label} {...s} />
             ))}
           </div>

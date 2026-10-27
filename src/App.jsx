@@ -5,6 +5,8 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CommandPalette from './components/CommandPalette';
 import WhatsAppFloat from './components/WhatsAppFloat';
+import ChatBot from './components/ChatBot';
+import { PortfolioContentProvider } from './content/PortfolioContentContext';
 import { useTheme } from './hooks/hooks';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -15,6 +17,7 @@ const Projects = lazy(() => import('./pages/Projects'));
 const ProjectDetails = lazy(() => import('./pages/ProjectDetails'));
 const Contact = lazy(() => import('./pages/Contact'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 function RouteEffects() {
   const { pathname } = useLocation();
@@ -105,6 +108,7 @@ export default function App() {
   }, []);
 
   return (
+    <PortfolioContentProvider>
     <HashRouter>
       <SkipLink />
       <RouteEffects />
@@ -120,6 +124,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:slug" element={<ProjectDetails />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/admin" element={<Admin />} />
             {/* Legacy routes from v1 — keep old links & bookmarks working */}
             <Route path="/AboutMe" element={<Navigate to="/about" replace />} />
             <Route path="/Services" element={<Navigate to="/services" replace />} />
@@ -133,6 +138,7 @@ export default function App() {
       </main>
       <Footer />
       <WhatsAppFloat />
+      <ChatBot />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -140,5 +146,6 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
     </HashRouter>
+    </PortfolioContentProvider>
   );
 }

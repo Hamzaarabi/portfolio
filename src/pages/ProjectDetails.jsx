@@ -5,13 +5,14 @@ import {
   FaCheck, FaFolderTree, FaGithub, FaLayerGroup, FaTag, FaUserGear,
 } from 'react-icons/fa6';
 import useTitle from '../hooks/useTitle';
-import { projects } from '../data/portfolio';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 import PageHero from '../components/PageHero';
 import Lightbox from '../components/Lightbox';
 import Reveal from '../components/Reveal';
 import { CtaBanner } from '../sections/Extras';
 
 export default function ProjectDetails() {
+  const { projects } = usePortfolioContent();
   const { slug } = useParams();
   const index = projects.findIndex((p) => p.slug === slug);
   const project = projects[index];
@@ -42,27 +43,35 @@ export default function ProjectDetails() {
               <div className="detail-main">
                 <h2>Overview</h2>
                 <p>{project.overview}</p>
-                <h2>Key features</h2>
-                <ul className="check-list">
-                  {project.features.map((f) => (
-                    <li key={f}><FaCheck /> {f}</li>
-                  ))}
-                </ul>
+                {project.features?.length > 0 && (
+                  <>
+                    <h2>Key features</h2>
+                    <ul className="check-list">
+                      {project.features.map((f) => (
+                        <li key={f}><FaCheck /> {f}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
 
-                <h2>Gallery</h2>
-                <div className="gallery-grid">
-                  {project.gallery.map((img, i) => (
-                    <button
-                      key={img}
-                      type="button"
-                      className="thumb"
-                      onClick={() => setLightbox(i + 1)}
-                      aria-label={`Open screenshot ${i + 1} of ${project.title}`}
-                    >
-                      <img src={img} alt="" loading="lazy" decoding="async" />
-                    </button>
-                  ))}
-                </div>
+                {project.gallery?.length > 0 && (
+                  <>
+                    <h2>Gallery</h2>
+                    <div className="gallery-grid">
+                      {project.gallery.map((img, i) => (
+                        <button
+                          key={`${img}-${i}`}
+                          type="button"
+                          className="thumb"
+                          onClick={() => setLightbox(i + 1)}
+                          aria-label={`Open screenshot ${i + 1} of ${project.title}`}
+                        >
+                          <img src={img} alt="" loading="lazy" decoding="async" />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 {project.structure && (
                   <details className="structure-box">
