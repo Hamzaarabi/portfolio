@@ -16,3 +16,7 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 coverage
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.env*

@@ -951,6 +951,29 @@ kbd {
 }
 .admin-note svg { flex: none; margin-top: 0.2rem; color: #fbbf24; }
 .admin-note p { margin: 0; line-height: 1.55; }
+.admin-note code { font-family: var(--font-mono); color: var(--accent-2); overflow-wrap: anywhere; }
+.admin-inline-filter {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  color: var(--text-dim); font-weight: 700;
+}
+.admin-inline-filter select {
+  min-height: 42px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); padding: 0.45rem 0.7rem;
+}
+.admin-message-list { display: grid; gap: 1rem; }
+.admin-message-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); padding: 1.35rem;
+}
+.admin-message-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 0.8rem;
+}
+.admin-message-head h3 { font-family: var(--font-display); margin: 0 0 0.25rem; }
+.admin-message-head p { color: var(--text-faint); margin: 0; overflow-wrap: anywhere; }
+.admin-message-head a { color: var(--accent-2); }
+.admin-message-subject { color: var(--text-dim); margin: 0 0 0.65rem; }
+.admin-message-body { color: var(--text); line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
 @media (max-width: 1024px) {
   .admin-grid, .projects-admin-grid { grid-template-columns: 1fr; }
   .admin-side-list { position: static; max-height: none; }

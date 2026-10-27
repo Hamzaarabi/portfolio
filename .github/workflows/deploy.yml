@@ -31,6 +31,12 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          # Optional repository Variables. Empty values use the public
+          # project fallbacks compiled in src/lib/supabase.js.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_ADMIN_EMAIL: ${{ vars.VITE_ADMIN_EMAIL }}
         run: npm run build
 
       - name: Publish to gh-pages branch
