@@ -4,7 +4,7 @@ import {
   FaCheck, FaCopy, FaEnvelope, FaLocationDot, FaPaperPlane, FaPhone, FaTriangleExclamation, FaWhatsapp,
 } from 'react-icons/fa6';
 import useTitle from '../hooks/useTitle';
-import { emailjsConfig } from '../data/portfolio';
+import { usePortfolioContent } from '../content/PortfolioContentContext';
 import PageHero from '../components/PageHero';
 import Socials from '../components/Socials';
 import Reveal from '../components/Reveal';
@@ -26,6 +26,7 @@ const TOPIC_VALUES = [
 
 export default function Contact() {
   const { t } = useLanguage();
+  const { emailConfig } = usePortfolioContent();
   const profile = useLocalizedProfile();
   useTitle(t('pages.contact.title'));
   const topicLabels = t('pages.contact.topics');
@@ -56,15 +57,15 @@ export default function Contact() {
     setStatus('sending');
     try {
       await emailjs.send(
-        emailjsConfig.serviceId,
-        emailjsConfig.templateId,
+        emailConfig.serviceId,
+        emailConfig.templateId,
         {
           user_name: form.name.trim(),
           user_email: form.email.trim(),
           subject: form.subject.trim() || t('pages.contact.defaultSubject'),
           message: form.message.trim(),
         },
-        emailjsConfig.publicKey
+        emailConfig.publicKey
       );
       setStatus('success');
       setForm({ name: '', email: '', subject: '', message: '', company: '' });

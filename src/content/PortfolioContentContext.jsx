@@ -7,6 +7,7 @@ import {
   skillGroups as defaultSkillGroups,
   projects as defaultProjects,
   experience as defaultExperience,
+  emailjsConfig as defaultEmailConfig,
 } from '../data/portfolio';
 
 /**
@@ -47,6 +48,7 @@ const EMPTY_CONTENT = {
   customProjects: [],
   deletedProjectSlugs: [],
   experience: null,
+  emailConfig: null,
 };
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -126,6 +128,16 @@ function normalizeExperience(value) {
     .filter((item) => item.period || item.title || item.org || item.points.length);
 }
 
+function normalizeEmailConfig(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const config = {
+    serviceId: cleanText(raw.serviceId),
+    templateId: cleanText(raw.templateId),
+    publicKey: cleanText(raw.publicKey),
+  };
+  return config.serviceId || config.templateId || config.publicKey ? config : null;
+}
+
 function normalizeStoredContent(raw) {
   if (!raw || typeof raw !== 'object') return clone(EMPTY_CONTENT);
   return {
@@ -133,6 +145,7 @@ function normalizeStoredContent(raw) {
     customProjects: asArray(raw.customProjects).map(normalizeProject).filter((project) => project.title),
     deletedProjectSlugs: [...new Set(cleanList(raw.deletedProjectSlugs))],
     experience: Array.isArray(raw.experience) ? normalizeExperience(raw.experience) : null,
+    emailConfig: normalizeEmailConfig(raw.emailConfig),
   };
 }
 
@@ -208,6 +221,21 @@ export function PortfolioContentProvider({ children }) {
     [stored.experience]
   );
 
+  const customEmailConfig = useMemo(
+    () => normalizeEmailConfig(stored.emailConfig),
+    [stored.emailConfig]
+  );
+
+  const emailConfig = useMemo(() => ({
+    serviceId: customEmailConfig?.serviceId || defaultEmailConfig.serviceId,
+    templateId: customEmailConfig?.templateId || defaultEmailConfig.templateId,
+    publicKey: customEmailConfig?.publicKey || defaultEmailConfig.publicKey,
+  }), [customEmailConfig]);
+
+  const hasCustomEmailConfig = Boolean(
+    customEmailConfig?.serviceId || customEmailConfig?.templateId || customEmailConfig?.publicKey
+  );
+
   const value = useMemo(() => {
     const uniqueSlug = (title, currentId = '') => {
       const base = slugify(title);
@@ -232,12 +260,17 @@ export function PortfolioContentProvider({ children }) {
       customProjects: stored.customProjects,
       deletedProjectSlugs: stored.deletedProjectSlugs,
       defaultProjects,
+      emailConfig,
+      defaultEmailConfig: { ...defaultEmailConfig },
+      customEmailConfig,
+      hasCustomEmailConfig,
       storageError,
       isCustomized:
         stored.customSkills.length > 0 ||
         stored.customProjects.length > 0 ||
         stored.deletedProjectSlugs.length > 0 ||
-        stored.experience !== null,
+        stored.experience !== null ||
+        hasCustomEmailConfig,
 
       addSkill(input) {
         const skill = normalizeSkill({ ...input, id: input?.id || makeId() });
@@ -307,6 +340,16 @@ export function PortfolioContentProvider({ children }) {
         setStored((prev) => ({ ...prev, experience: null }));
       },
 
+      saveEmailConfig(input) {
+        const config = normalizeEmailConfig(input);
+        setStored((prev) => ({ ...prev, emailConfig: config }));
+        return config;
+      },
+
+      resetEmailConfig() {
+        setStored((prev) => ({ ...prev, emailConfig: null }));
+      },
+
       resetContent() {
         setStored(clone(EMPTY_CONTENT));
       },
@@ -326,7 +369,7 @@ export function PortfolioContentProvider({ children }) {
         setStored(normalizeStoredContent(data));
       },
     };
-  }, [experience, projects, skillGroups, storageError, stored]);
+  }, [customEmailConfig, emailConfig, experience, hasCustomEmailConfig, projects, skillGroups, storageError, stored]);
 
   return (
     <PortfolioContentContext.Provider value={value}>
