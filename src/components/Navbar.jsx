@@ -6,7 +6,7 @@ import Logo from '../assets/logo.webp';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 
-export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
+export default function Navbar({ theme, onToggleTheme }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -32,7 +32,6 @@ export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
       <div className="container-x nav-inner">
         <Link to="/" className="brand" aria-label={t('nav.brandHome')}>
           <img src={Logo} alt={t('nav.logoAlt')} className="brand-logo" />
-          <span className="brand-text" dir="ltr">Hamza<em>.dev</em></span>
         </Link>
 
         <nav className="nav-links" aria-label={t('nav.primary')}>
@@ -44,10 +43,6 @@ export default function Navbar({ theme, onToggleTheme, onOpenPalette }) {
         </nav>
 
         <div className="nav-actions">
-          <button type="button" className="palette-hint" onClick={onOpenPalette} aria-label={t('nav.openQuickNav')}>
-            <span>{t('nav.quickNav')}</span>
-            <kbd>⌘K</kbd>
-          </button>
           <LanguageSwitcher />
           <button
             type="button"
